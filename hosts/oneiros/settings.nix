@@ -42,7 +42,7 @@
   # Optional parts; the desktop itself (Hyprland, shell, fonts, theming,
   # screenshots, login screen) is always installed.
   features = {
-    virtualization = true; # virt-manager/libvirt and Waydroid (Android apps)
+    virtualization = true; # virt-manager/libvirt VMs
     games = true; # Steam
     coding = true; # editors (Neovim, Zed), language toolchains, Claude Code
     apps = true; # browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian…

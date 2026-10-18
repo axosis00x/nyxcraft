@@ -91,7 +91,7 @@ in
     vm = flag "Running inside a virtual machine (guest clipboard and QEMU agents).";
 
     features = {
-      virtualization = flag "virt-manager/libvirt VMs and Waydroid (Android apps).";
+      virtualization = flag "virt-manager/libvirt VMs.";
       games = flag "Steam.";
       coding = flag "Editors (Neovim, Zed), language toolchains, Claude Code.";
       apps = flag "Browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian…";

@@ -304,7 +304,7 @@ note "is always installed."
 feature_keys=(virtualization games coding apps extras)
 feature_name=(Virtualization Games Coding Apps Extras)
 feature_desc=(
-    "virt-manager/libvirt VMs and Waydroid (Android apps)"
+    "virt-manager/libvirt VMs"
     "Steam"
     "Neovim, Zed, language toolchains, Claude Code"
     "browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian…"
@@ -483,7 +483,7 @@ write_file "$settings_file" <<EOF
   # Optional parts; the desktop itself (Hyprland, shell, fonts, theming,
   # screenshots, login screen) is always installed.
   features = {
-    virtualization = ${feature[virtualization]}; # virt-manager/libvirt and Waydroid (Android apps)
+    virtualization = ${feature[virtualization]}; # virt-manager/libvirt VMs
     games = ${feature[games]}; # Steam
     coding = ${feature[coding]}; # editors (Neovim, Zed), language toolchains, Claude Code
     apps = ${feature[apps]}; # browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian…

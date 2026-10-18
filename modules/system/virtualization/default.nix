@@ -10,7 +10,7 @@ let
 in
 {
   options.systemSettings.virtualization = {
-    enable = lib.mkEnableOption "virt-manager and Waydroid";
+    enable = lib.mkEnableOption "virt-manager and libvirt";
   };
   config = lib.mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
@@ -19,8 +19,6 @@ in
     ];
     hardware.graphics.enable32Bit = true;
     virtualisation.libvirtd.enable = true;
-    virtualisation.waydroid.enable = true;
-    virtualisation.waydroid.package = pkgs.waydroid-nftables;
     programs.virt-manager.enable = true;
     users.users.${settings.username}.extraGroups = [ "libvirtd" ];
 

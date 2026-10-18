@@ -94,7 +94,7 @@ shell, fonts, theming, screenshots and the login screen) is always installed.
 
 | Feature        | What it adds                                              |
 | -------------- | --------------------------------------------------------- |
-| Virtualization | virt-manager/libvirt VMs and Waydroid (Android apps)      |
+| Virtualization | virt-manager/libvirt VMs                                  |
 | Games          | Steam                                                     |
 | Coding         | Neovim, Zed, language toolchains, Claude Code             |
 | Apps           | browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian… |
