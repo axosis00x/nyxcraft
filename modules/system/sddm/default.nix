@@ -49,7 +49,7 @@ in
     # theme name from sddm.conf unless it is present in the X resource database.
     services.displayManager.sddm.setupScript = ''
       export XCURSOR_PATH="${mocu-xcursor}/share/icons:/run/current-system/sw/share/icons"
-      ${pkgs.xorg.xrdb}/bin/xrdb -merge - <<'EOF'
+      ${pkgs.xrdb}/bin/xrdb -merge - <<'EOF'
       Xcursor.theme: Mocu-Black-Right
       Xcursor.size: 24
       EOF
