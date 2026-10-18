@@ -1,10 +1,9 @@
-# Shared by every machine in hosts/: the system configuration plus a Home
-# Manager user for each entry in systemSettings.users. A host folder only
-# adds its settings.nix and hardware-configuration.nix (see flake.nix).
+# Shared host configuration and Home Manager users. Each host supplies its
+# settings.nix and hardware-configuration.nix.
 { config, settings, ... }:
 
 let
-  # Optional per-machine Home Manager extras (hosts/<hostname>/home.nix).
+  # Optional host-specific Home Manager configuration.
   hostHome = ../../hosts + "/${settings.hostname}/home.nix";
 in
 

@@ -1,46 +1,41 @@
-# This machine's settings. Every folder in hosts/ is one machine, named after
-# its hostname; flake.nix builds each as nixosConfigurations.<folder> and
-# hands this file to every module as `settings`. ./install.sh writes it;
-# modules/settings.nix lists every option, its type and its default.
+# Host settings; install.sh writes this file. See modules/settings.nix for
+# available options and defaults.
 {
-  # Login name and its home directory (/home/<username>).
+  # Login name and home directory (/home/<username>).
   username = "axosis00x";
   fullName = "axosis00x";
 
-  # Where this repo is cloned; config/ is linked into ~/.config from here.
+  # Repo location; config/ is linked into ~/.config from here.
   repoPath = "/home/axosis00x/nyxcraft";
 
-  # Git commit identity (an empty string leaves it unset).
+  # Git commit identity; empty values leave it unset.
   git = {
     name = "axosis00x";
     email = "130370071+axosis00x@users.noreply.github.com";
   };
 
-  # The hostname is this folder's name (hosts/<hostname>), also used as
-  # the flake output: nixos-rebuild switch --flake ~/nyxcraft#<hostname>
+  # Hostname comes from this folder name and selects the flake output.
   timezone = "Asia/Kathmandu";
 
-  # Release this machine was first installed with; never bump it.
+  # Original install release; keep this value unchanged.
   stateVersion = "26.05";
 
-  # "systemd-boot" for UEFI (efiMount = the EFI partition's mount point),
-  # "grub" for legacy BIOS (grubDevice = the boot disk, e.g. /dev/sda).
+  # Choose systemd-boot for UEFI or GRUB for legacy BIOS.
   boot = {
     loader = "systemd-boot";
     efiMount = "/boot";
     grubDevice = "";
   };
 
-  # Hardware specific to the original machine; turn off elsewhere.
-  # NVIDIA Optimus (Intel + NVIDIA laptop graphics): modules/system/gpu
+  # Machine-specific hardware; disable on other hosts.
+  # Intel + NVIDIA Optimus laptop graphics.
   nvidiaOptimus = true;
-  # Extra ext4 drive mounted by UUID at ~/DataSSD: modules/system/storage
+  # Extra ext4 drive mounted at ~/DataSSD.
   dataDrive = true;
-  # Running inside a virtual machine (enables the guest clipboard agent).
+  # Enable guest integration when running in a VM.
   vm = false;
 
-  # Optional parts; the desktop itself (Hyprland, shell, fonts, theming,
-  # screenshots, login screen) is always installed.
+  # Optional software groups; the desktop is always installed.
   features = {
     virtualization = true; # virt-manager/libvirt VMs
     games = true; # Steam

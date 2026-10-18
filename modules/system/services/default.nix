@@ -19,9 +19,7 @@ in
 
     services.power-profiles-daemon.enable = true;
 
-    # Audio for the shell (volume, media, visualizers). NixOS turns this on
-    # by default with a graphical session today; declared so it doesn't
-    # depend on that default.
+    # Audio services used by the desktop shell.
     services.pipewire = {
       enable = true;
       wireplumber.enable = true;

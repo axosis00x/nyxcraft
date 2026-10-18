@@ -23,8 +23,7 @@
 
   xdg.configFile = {
     btop.source = config.lib.file.mkOutOfStoreSymlink "${settings.repoPath}/config/btop";
-    # Keep CAVA's config files linked individually so apply-theme.sh can
-    # switch the writable `themes/current` link without modifying the repo.
+    # Link CAVA files individually so apply-theme.sh can switch themes/current.
     "cava/config".source =
       config.lib.file.mkOutOfStoreSymlink "${settings.repoPath}/config/cava/config";
     "cava/shaders".source =
@@ -46,20 +45,15 @@
     zed.source = config.lib.file.mkOutOfStoreSymlink "${settings.repoPath}/config/zed";
   };
 
-  # ~/.config/cava used to be one link to the repo folder; it's now a real
-  # folder of per-file links (so apply-theme.sh can write themes/current).
-  # Home Manager doesn't remove that old out-of-store link, and would create
-  # the new links through it, inside the repo, as self-referencing loops. Drop
-  # the old link first.
+  # Remove the old ~/.config/cava directory link before creating per-file links;
+  # otherwise Home Manager would create self-referencing links inside the repo.
   home.activation.cavaFolderLink = lib.hm.dag.entryBefore [ "checkLinkTargets" ] ''
     if [ -L "$HOME/.config/cava" ]; then
       run rm "$HOME/.config/cava"
     fi
   '';
 
-  # Machine-local state that git doesn't track (see .gitignore): on a fresh
-  # install, point every app at the default theme and give HyprMod an empty
-  # file to write into. Does nothing once they exist.
+  # Initialize ignored, machine-local theme state on first install.
   home.activation.nyxcraftState =
     let
       repo = settings.repoPath;

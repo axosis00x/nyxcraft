@@ -37,8 +37,7 @@
     security.pam.services.ly.enableGnomeKeyring = true;
     security.polkit.enable = true;
 
-    # UEFI machines boot with systemd-boot, legacy BIOS ones with GRUB on
-    # the disk in settings.boot.grubDevice (install.sh detects both).
+    # Select systemd-boot for UEFI or GRUB for legacy BIOS.
     boot.loader =
       if settings.boot.loader == "grub" then
         {
@@ -52,9 +51,7 @@
           efi.efiSysMountPoint = settings.boot.efiMount;
         };
 
-    # Running inside a VM: share the clipboard and resize with the host's
-    # viewer (SPICE agent; Hyprland starts its session half, see
-    # hypr/modules/autostarts.lua) and let the host shut it down cleanly.
+    # VM clipboard, display resizing, and clean shutdown via SPICE/QEMU agents.
     services.spice-vdagentd.enable = settings.vm or false;
     services.qemuGuest.enable = settings.vm or false;
     environment.systemPackages = lib.optional (settings.vm or false) pkgs.spice-vdagent;
@@ -62,9 +59,7 @@
     networking.hostName = settings.hostname;
     networking.networkmanager.enable = true;
     time.timeZone = settings.timezone;
-    # Qt only looks for tzdata in /usr/share/zoneinfo (or /usr/lib), which
-    # NixOS doesn't have; without this Qt apps such as Quickshell warn
-    # "Unable to determine system time zone".
+    # Qt expects zoneinfo under /usr/share; link it to NixOS's /etc/zoneinfo.
     systemd.tmpfiles.rules = [ "L+ /usr/share/zoneinfo - - - - /etc/zoneinfo" ];
     i18n.defaultLocale = "en_US.UTF-8";
     services.xserver.xkb = {
@@ -73,8 +68,7 @@
     };
 
     users.users.${settings.username} = {
-      # No fixed uid: an account that already exists keeps its own (NixOS
-      # remembers assigned uids), so installing over a set-up user is safe.
+      # Preserve an existing account's assigned uid during installation.
       isNormalUser = true;
       description = settings.fullName;
       extraGroups = [

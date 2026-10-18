@@ -41,12 +41,10 @@ in
       CursorTheme = "Mocu-Black-Right";
       CursorSize = "24";
     };
-    # SDDM's X11 server has the cursor theme configured above, but Qt's greeter
-    # also needs its own theme and search path to find the Nix store assets.
+    # Set Qt's cursor theme and search path for the greeter.
     services.displayManager.sddm.settings.General.GreeterEnvironment =
       lib.mkForce "QML2_IMPORT_PATH=${config.programs.silentSDDM.package'}/share/sddm/themes/silent/components/,QT_IM_MODULE=qtvirtualkeyboard,XCURSOR_THEME=Mocu-Black-Right,XCURSOR_SIZE=24,XCURSOR_PATH=${mocu-xcursor}/share/icons";
-    # Set the X server's cursor resources as well; SDDM/Qt can ignore the
-    # theme name from sddm.conf unless it is present in the X resource database.
+    # Apply the cursor theme through X resources as well.
     services.displayManager.sddm.setupScript = ''
       export XCURSOR_PATH="${mocu-xcursor}/share/icons:/run/current-system/sw/share/icons"
       ${pkgs.xrdb}/bin/xrdb -merge - <<'EOF'
@@ -59,10 +57,7 @@ in
       "f+ /var/lib/AccountsService/users/${cfg.user} 0600 root root - [User]\\nIcon=/var/lib/AccountsService/icons/${cfg.user}\\n"
     ];
 
-    # The login screen can't read the user's (private) home, so copy their
-    # profile picture, ~/.face (set from Settings, see
-    # config/quickshell/scripts/pfp.sh), to where it looks, or the default
-    # when there's none. Runs at boot and again whenever ~/.face changes.
+    # Copy ~/.face to AccountsService for the greeter; use the default if absent.
     systemd.services.nyxcraft-pfp-sync = lib.mkIf (cfg.avatar != null) {
       description = "Copy the profile picture to the login screen";
       wantedBy = [ "multi-user.target" ];
@@ -71,8 +66,7 @@ in
         let
           face = "${config.users.users.${cfg.user}.home}/.face";
           icon = "/var/lib/AccountsService/icons/${cfg.user}";
-          # Read as the user, so a ~/.face symlink can't expose a file they
-          # couldn't read themselves; capped at 16 MiB.
+          # Read as the user and cap the copied image at 16 MiB.
           asUser = "${pkgs.util-linux}/bin/runuser -u ${cfg.user} --";
         in
         ''

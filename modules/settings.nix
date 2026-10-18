@@ -1,8 +1,5 @@
-# What a host's settings.nix (hosts/<hostname>/settings.nix) may contain.
-# flake.nix checks every host's file against these options before building
-# anything, so a typo or a wrong type stops with a clear message pointing at
-# that file, and whatever is left out gets the default below. Modules then
-# read the checked result as `settings`.
+# Per-host settings schema and defaults. flake.nix validates each host file
+# before passing its values to modules as `settings`.
 { config, lib, ... }:
 let
   inherit (lib) mkOption types;

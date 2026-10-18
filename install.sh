@@ -173,16 +173,16 @@ pick_timezone() {
     done
 }
 
-# "nyxcraft" in figlet's standard font, shaded cyan to blue, with the
-# author underneath. A quoted heredoc keeps the backslashes and quotes as-is.
+# Nyxcraft logo, shaded cyan to blue. Keep the quoted heredoc for literal text.
 banner() {
-    local rows shades=(87 81 75 69 63) i
+    local rows shades=(87 81 75 69 63 57) i
     mapfile -t rows <<'BANNER'
-       _                     __ _
- _ __ (_)_  _____ _ __ __ _ / _| |_
-| '_ \| \ \/ / __| '__/ _` | |_| __|
-| | | | |>  < (__| | | (_| |  _| |_
-|_| |_|_/_/\_\___|_|  \__,_|_|  \__|
+__ _
+ _ __  _   ___  _____ _ __ __ _ / _| |_
+| '_ \| | | \/ / __| '__/ _` | |_| __|
+| | | | |_| |>  < (__| | | (_| |  _| |_
+|_| |_|\__, /_/\_\___|_|  \__,_|_|  \__|
+       |___/
 BANNER
     echo
     for i in "${!rows[@]}"; do

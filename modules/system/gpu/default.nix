@@ -17,10 +17,7 @@ in
     hardware.graphics = {
       enable = true;
       enable32Bit = true;
-      # Hyprland renders on the Intel iGPU (see envs.lua's mesa/iHD vars), but
-      # without this package LIBVA_DRIVER_NAME=iHD has no driver to load, so
-      # VAAPI silently fails and every screen recorder falls back to a
-      # CPU-only software encode -- pegging the CPU and dropping frames.
+      # Hyprland uses Intel VAAPI; this driver enables hardware video encoding.
       extraPackages = [ pkgs.intel-media-driver ];
     };
     services.xserver.videoDrivers = [ "nvidia" ];

@@ -22,9 +22,7 @@ in
     programs.virt-manager.enable = true;
     users.users.${settings.username}.extraGroups = [ "libvirtd" ];
 
-    # libvirt's "default" NAT network (virbr0) isn't started on its own, and
-    # VMs attached to it then refuse to boot ("network 'default' is not
-    # active"). Bring it up once libvirtd is running, on every boot.
+    # Start libvirt's default NAT network after libvirtd on every boot.
     systemd.services.libvirt-default-network = {
       description = "Start libvirt's default NAT network";
       after = [ "libvirtd.service" ];
