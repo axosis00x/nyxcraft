@@ -5,6 +5,10 @@ All notable changes to nyxcraft are recorded here. Versions follow
 `scripts/release.sh` from the [Conventional Commits](https://www.conventionalcommits.org)
 since the previous release.
 
+## [0.1.0] - 2026-10-18
+
+First tagged release.
+
 ## [0.1.0-alpha.1] - 2026-10-16
 
 ### Features
