@@ -9,10 +9,14 @@
 let
   cfg = config.systemSettings.sddm;
   mocu-xcursor = (pkgs.callPackage ../../user/looks/mocu-xcursor.nix { }).overrideAttrs (old: {
-    # Qt uses the Xcursor `hand2` shape over clickable controls. In SDDM only,
-    # point that alias at Mocu's regular arrow so hover does not switch shapes.
+    # Qt/Xcursor can request any of these aliases for a pointing hand. Mocu's
+    # `pointer` asset is a hand, so map the hover aliases to its normal arrow
+    # in SDDM only.
     postInstall = (old.postInstall or "") + ''
-      ln -sf left_ptr "$out/share/icons/Mocu-Black-Right/cursors/hand2"
+      cursor_dir="$out/share/icons/Mocu-Black-Right/cursors"
+      for cursor in hand hand1 hand2 pointer pointing_hand; do
+        ln -sf left_ptr "$cursor_dir/$cursor"
+      done
     '';
   });
 in
