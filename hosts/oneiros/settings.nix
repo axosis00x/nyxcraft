@@ -5,7 +5,7 @@
 {
   # Login name and its home directory (/home/<username>).
   username = "axosis00x";
-  fullName = "axosis incon";
+  fullName = "axosis00x";
 
   # Where this repo is cloned; config/ is linked into ~/.config from here.
   repoPath = "/home/axosis00x/nyxcraft";
