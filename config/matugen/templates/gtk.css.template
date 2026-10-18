@@ -16,7 +16,7 @@
 @define-color sidebar_border_color {{colors.outline_variant.default.hex}};
 @define-color sidebar_backdrop_color @window_bg_color;
 
-/* ── nixcraft: colorful palette (status colors and libadwaita's named palette, from the
+/* ── nyxcraft: colorful palette (status colors and libadwaita's named palette, from the
    wallpaper's Material roles, so apps use its hues, not stock Adwaita) ── */
 @define-color destructive_color {{colors.error.default.hex}};
 @define-color destructive_bg_color {{colors.error.default.hex}};

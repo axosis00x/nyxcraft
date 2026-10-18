@@ -1,6 +1,6 @@
-## nixcraft
+## nyxcraft
 
-Curiosity brought me here. This is nixcraft, a NixOS configuration for my desktop with hyprland.
+Curiosity brought me here. This is nyxcraft, a NixOS configuration for my desktop with hyprland.
 
 ## Showcase
 
@@ -41,7 +41,7 @@ On a fresh NixOS system, logged in as your user (not root):
 curl -fsSL https://subashlamatamang.com.np/install | bash
 ```
 
-This clones the repo to `~/nixcraft` and runs the installer described below.
+This clones the repo to `~/nyxcraft` and runs the installer described below.
 To see what it would do without changing anything, run the demo first:
 
 ```bash
@@ -55,16 +55,16 @@ Prefer to do it step by step? Read on.
 Install NixOS normally (any edition), create your user, boot into the new
 system, and connect to the internet.
 
-### 2. Clone the repository to `~/nixcraft`
+### 2. Clone the repository to `~/nyxcraft`
 
 Git isn't installed on a fresh system, so borrow it for one command:
 
 ```bash
-nix-shell -p git --run "git clone https://github.com/axosis00x/nixcraft ~/nixcraft"
-cd ~/nixcraft
+nix-shell -p git --run "git clone https://github.com/axosis00x/nyxcraft ~/nyxcraft"
+cd ~/nyxcraft
 ```
 
-Clone it into the home of the user who will use the desktop. `~/nixcraft` is
+Clone it into the home of the user who will use the desktop. `~/nyxcraft` is
 the usual place, but anywhere they can read works: the installer records the
 location as `repoPath`, and `config/` is linked into `~/.config` from there.
 
@@ -133,7 +133,7 @@ also flip a feature later by editing `features` in
 usual case. Run the installer while logged in as that user and press Enter at
 the username and hostname prompts. The defaults are your current ones, so
 nothing gets renamed. Your account keeps its password, home folder and files,
-and nixcraft only takes over managing it.
+and nyxcraft only takes over managing it.
 
 > If you type a username that doesn't exist yet, NixOS creates it on switch.
 > Give it a password with `sudo passwd <user>` and clone the repo into _its_
@@ -180,13 +180,13 @@ Edits under `config/` take effect without a rebuild, since they're linked into
 After changing anything under `modules/` or `hosts/`:
 
 ```bash
-sudo nixos-rebuild switch --flake ~/nixcraft#<hostname>
+sudo nixos-rebuild switch --flake ~/nyxcraft#<hostname>
 ```
 
 To update every input:
 
 ```bash
-cd ~/nixcraft
+cd ~/nyxcraft
 nix flake update
 sudo nixos-rebuild switch --flake .#<hostname>
 ```

@@ -29,7 +29,7 @@ in
             "Pictures" = "󰋹";
             "Projects" = "󱓞";
             "Videos" = "";
-            "nixcraft" = "";
+            "nyxcraft" = "";
             ".config" = "";
           };
         };

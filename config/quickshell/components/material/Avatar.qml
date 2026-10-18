@@ -6,7 +6,7 @@ import "../../theme" as Palette
 
 // The user's profile picture, cut to a circle: ~/.face when one is set
 // (Settings → the picture by your name, see scripts/pfp.sh), otherwise
-// nixcraft's default, assets/pfp.png (linked into ../../assets here).
+// nyxcraft's default, assets/pfp.png (linked into ../../assets here).
 // Picking, replacing or resetting the picture shows up everywhere at once,
 // no reload needed.
 ClippingRectangle {

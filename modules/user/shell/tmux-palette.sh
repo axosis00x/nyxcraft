@@ -1,12 +1,12 @@
 # shellcheck shell=bash
 # Sourced into the catppuccin tmux plugin (modules/user/shell/tmux.nix).
 #
-# The plugin only knows its four built-in flavours, so a nixcraft theme
+# The plugin only knows its four built-in flavours, so a nyxcraft theme
 # would get a broken status bar. This builds its palette from the active
 # theme's own colors instead (the @thm_* options its tmux.conf sets, see
 # config/themes/<name>/tmux.conf), one accent per theme like the rest of the
 # desktop. With no theme colors set it falls back to a built-in flavour.
-nixcraft_palette() {
+nyxcraft_palette() {
     local bg
     bg="$(get_tmux_option "@thm_bar_bg" "")"
     [ -n "$bg" ] || bg="$(get_tmux_option "@thm_bg" "")"

@@ -40,7 +40,7 @@ FloatingWindow {
     readonly property real cardHeight: 560
 
     // Matched by the Hyprland window rule.
-    title: "nixcraft-settings"
+    title: "nyxcraft-settings"
     visible: shown
     color: "transparent"
     implicitWidth: cardWidth
@@ -96,7 +96,7 @@ FloatingWindow {
     }
 
     function restoreFloating() {
-        floatWindowProcess.exec(["hyprctl", "eval", "hl.dispatch(hl.dsp.window.float({window = \"title:nixcraft-settings\", action = \"on\"})); hl.dispatch(hl.dsp.window.center({window = \"title:nixcraft-settings\"}))"]);
+        floatWindowProcess.exec(["hyprctl", "eval", "hl.dispatch(hl.dsp.window.float({window = \"title:nyxcraft-settings\", action = \"on\"})); hl.dispatch(hl.dsp.window.center({window = \"title:nyxcraft-settings\"}))"]);
     }
 
     Timer {

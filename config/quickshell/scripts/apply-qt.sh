@@ -15,12 +15,12 @@ for ct in qt5ct qt6ct; do
     dir="$HOME/.config/$ct"
     mkdir -p "$dir/colors"
 
-    cp "$theme_dir/qt.conf" "$dir/colors/nixcraft.conf.tmp"
-    mv "$dir/colors/nixcraft.conf.tmp" "$dir/colors/nixcraft.conf"
+    cp "$theme_dir/qt.conf" "$dir/colors/nyxcraft.conf.tmp"
+    mv "$dir/colors/nyxcraft.conf.tmp" "$dir/colors/nyxcraft.conf"
 
     cat >"$dir/$ct.conf.tmp" <<EOF
 [Appearance]
-color_scheme_path=$dir/colors/nixcraft.conf
+color_scheme_path=$dir/colors/nyxcraft.conf
 custom_palette=true
 standard_dialogs=default
 style=Fusion

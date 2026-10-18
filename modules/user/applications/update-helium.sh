@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Point helium.nix at the newest Helium release: looks up the latest GitHub
 # release, prefetches its x86_64 AppImage, and rewrites `version` and `hash`.
-# Then rebuild:  sudo nixos-rebuild switch --flake ~/nixcraft#$(hostname)
+# Then rebuild:  sudo nixos-rebuild switch --flake ~/nyxcraft#$(hostname)
 set -euo pipefail
 
 nix_file="$(dirname "$(readlink -f "$0")")/helium.nix"

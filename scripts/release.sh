@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# nixcraft release: bumps the version file, writes the CHANGELOG.md entry from the
+# nyxcraft release: bumps the version file, writes the CHANGELOG.md entry from the
 # Conventional Commits since the last tag, then commits and tags the version.
 # Pushing the tag makes the release workflow publish a GitHub release.
 #
@@ -264,7 +264,7 @@ printf '%s\n' "$version" >version
 
 git add version CHANGELOG.md
 git commit -q -m "chore(release): $tag"
-git tag -a "$tag" -m "nixcraft $tag ($version_phase)"
+git tag -a "$tag" -m "nyxcraft $tag ($version_phase)"
 info "Committed and tagged $tag."
 
 if $push; then

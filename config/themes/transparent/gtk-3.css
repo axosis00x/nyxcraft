@@ -16,7 +16,7 @@
 @define-color sidebar_border_color rgba(255, 255, 255, 0.12);
 @define-color sidebar_backdrop_color @sidebar_bg_color;
 
-/* ── nixcraft: colorful palette (status colors and libadwaita's named palette, from this
+/* ── nyxcraft: colorful palette (status colors and libadwaita's named palette, from this
    theme's own colors, so apps use the theme's hues, not stock Adwaita) ── */
 @define-color destructive_color #ff8a9b;
 @define-color destructive_bg_color #ff8a9b;

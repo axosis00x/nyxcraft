@@ -8,7 +8,7 @@
   fullName = "axosis incon";
 
   # Where this repo is cloned; config/ is linked into ~/.config from here.
-  repoPath = "/home/axosis00x/nixcraft";
+  repoPath = "/home/axosis00x/nyxcraft";
 
   # Git commit identity (an empty string leaves it unset).
   git = {
@@ -17,7 +17,7 @@
   };
 
   # The hostname is this folder's name (hosts/<hostname>), also used as
-  # the flake output: nixos-rebuild switch --flake ~/nixcraft#<hostname>
+  # the flake output: nixos-rebuild switch --flake ~/nyxcraft#<hostname>
   timezone = "Asia/Kathmandu";
 
   # Release this machine was first installed with; never bump it.

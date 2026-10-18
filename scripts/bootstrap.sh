@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# One-line nixcraft install for a fresh NixOS system:
+# One-line nyxcraft install for a fresh NixOS system:
 #
 #   curl -fsSL https://subashlamatamang.com.np/install | bash
 #   curl -fsSL https://subashlamatamang.com.np/install | bash -s -- --demo   # look, don't touch
 #
-# Clones the repo to ~/nixcraft (or reuses it) and runs ./install.sh, passing
+# Clones the repo to ~/nyxcraft (or reuses it) and runs ./install.sh, passing
 # any arguments through. Everything is inside main(), so a download cut off
 # halfway never runs a partial script.
 set -euo pipefail
@@ -18,8 +18,8 @@ main() {
     say() { printf '    %s•%s %s\n' "$blue" "$reset" "$1"; }
     fail() { printf '    %s✗ %s%s\n' "$red" "$1" "$reset" >&2; }
 
-    local repo_url=${NIXCRAFT_REPO:-https://github.com/axosis00x/nixcraft}
-    local dest=${NIXCRAFT_DIR:-$HOME/nixcraft}
+    local repo_url=${NYXCRAFT_REPO:-https://github.com/axosis00x/nyxcraft}
+    local dest=${NYXCRAFT_DIR:-$HOME/nyxcraft}
 
     if [[ $EUID -eq 0 ]]; then
         fail "Run this as your normal user, not root (it uses sudo where needed)."

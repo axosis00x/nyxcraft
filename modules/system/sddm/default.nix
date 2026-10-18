@@ -43,7 +43,7 @@ in
     # profile picture, ~/.face (set from Settings, see
     # config/quickshell/scripts/pfp.sh), to where it looks, or the default
     # when there's none. Runs at boot and again whenever ~/.face changes.
-    systemd.services.nixcraft-pfp-sync = lib.mkIf (cfg.avatar != null) {
+    systemd.services.nyxcraft-pfp-sync = lib.mkIf (cfg.avatar != null) {
       description = "Copy the profile picture to the login screen";
       wantedBy = [ "multi-user.target" ];
       serviceConfig.Type = "oneshot";
@@ -64,7 +64,7 @@ in
           mv -f ${icon}.new ${icon}
         '';
     };
-    systemd.paths.nixcraft-pfp-sync = lib.mkIf (cfg.avatar != null) {
+    systemd.paths.nyxcraft-pfp-sync = lib.mkIf (cfg.avatar != null) {
       wantedBy = [ "multi-user.target" ];
       pathConfig.PathChanged = "${config.users.users.${cfg.user}.home}/.face";
     };

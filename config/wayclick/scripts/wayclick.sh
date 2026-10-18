@@ -91,7 +91,7 @@ notify_user() {
 # instead of trying to apt/pacman-install them). The heavier nixpkgs lookups
 # for the actual native build only happen further down, gated behind the
 # build marker, so a normal toggle (the ALT+V hot path) stays fast.
-# The nixcraft wayclick module (modules/user/wayclick) provides
+# The nyxcraft wayclick module (modules/user/wayclick) provides
 # wayclick-python with evdev and pygame-ce prebuilt; with it there is nothing
 # to build. Without it, fall back to building a uv venv on first run.
 if command -v wayclick-python &>/dev/null; then

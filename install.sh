@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# nixcraft installer: adapts this flake to the current machine and user, lets
+# nyxcraft installer: adapts this flake to the current machine and user, lets
 # you pick optional features, then builds it. Run from the cloned repo at
-# ~/nixcraft on NixOS, as the user who will use the desktop (not root).
+# ~/nyxcraft on NixOS, as the user who will use the desktop (not root).
 #
 #   ./install.sh               ask for each value (Enter keeps the default)
 #   ./install.sh --yes         accept every default without asking
@@ -173,7 +173,7 @@ pick_timezone() {
     done
 }
 
-# "nixcraft" in figlet's standard font, shaded cyan to blue, with the
+# "nyxcraft" in figlet's standard font, shaded cyan to blue, with the
 # author underneath. A quoted heredoc keeps the backslashes and quotes as-is.
 banner() {
     local rows shades=(87 81 75 69 63) i
@@ -193,7 +193,7 @@ BANNER
         fi
     done
     printf '  %sby%s %saxosis00x%s\n\n' "$dim" "$reset" "$accent" "$reset"
-    printf '  %sAdapts nixcraft to this machine, then builds it.%s\n' "$dim" "$reset"
+    printf '  %sAdapts nyxcraft to this machine, then builds it.%s\n' "$dim" "$reset"
     $demo && printf '  %s● demo%s %snothing will be changed%s\n' "$cyan" "$reset" "$dim" "$reset"
     return 0
 }
@@ -207,7 +207,7 @@ command -v git >/dev/null || die "git is missing. Try: nix-shell -p git pciutils
 
 repo=$(cd "$(dirname "$0")" && pwd)
 cd "$repo"
-[[ -f flake.nix && -d hosts && -d modules/host ]] || die "Run this from the nixcraft repository."
+[[ -f flake.nix && -d hosts && -d modules/host ]] || die "Run this from the nyxcraft repository."
 
 banner
 
@@ -458,7 +458,7 @@ write_file "$settings_file" <<EOF
   };
 
   # The hostname is this folder's name (hosts/<hostname>), also used as
-  # the flake output: nixos-rebuild switch --flake ~/nixcraft#<hostname>
+  # the flake output: nixos-rebuild switch --flake ~/nyxcraft#<hostname>
   timezone = "$timezone";
 
   # Release this machine was first installed with; never bump it.

@@ -87,9 +87,9 @@ if ! $init; then
 fi
 
 install_if_present "$theme_dir/tmux.conf" "$HOME/.config/tmux/theme.conf"
-install_if_present "$theme_dir/yazi-flavor.toml" "$HOME/.config/yazi/flavors/nixcraft.yazi/flavor.toml"
+install_if_present "$theme_dir/yazi-flavor.toml" "$HOME/.config/yazi/flavors/nyxcraft.yazi/flavor.toml"
 # btop: a theme generated from the palette (quickshell.js); btop.conf points
-# at "nixcraft". Running btop reloads it on SIGUSR2.
+# at "nyxcraft". Running btop reloads it on SIGUSR2.
 if [ -f "$theme_dir/quickshell.js" ]; then
     pal() { sed -n "s/^const $1 = \"\(.*\)\"$/\1/p" "$theme_dir/quickshell.js" | grep -o '[0-9a-fA-F]\{6\}$' | sed 's/^/#/'; }
     bg=$(pal bg) fg=$(pal textPrimary) muted=$(pal textMuted) sub=$(pal textSecondary)
@@ -97,7 +97,7 @@ if [ -f "$theme_dir/quickshell.js" ]; then
     blue=$(pal blue) green=$(pal green) yellow=$(pal yellow) purple=$(pal purple)
     aqua=$(pal aqua) orange=$(pal orange) red=$(pal error)
     mkdir -p "$HOME/.config/btop/themes"
-    cat >"$HOME/.config/btop/themes/nixcraft.theme" <<BTOP
+    cat >"$HOME/.config/btop/themes/nyxcraft.theme" <<BTOP
 theme[main_bg]="$bg"
 theme[main_fg]="$fg"
 theme[title]="$fg"

@@ -108,9 +108,9 @@ hl.window_rule({
 -- translucent themes, clipped by a rounding that matches the card's corners
 -- (Theme.radiusLarge) so it doesn't spill past them.
 hl.window_rule({
-    name = "nixcraft-settings",
+    name = "nyxcraft-settings",
     match = {
-        title = "^(nixcraft-settings)$",
+        title = "^(nyxcraft-settings)$",
     },
     animation = "popin 50%",
     float = true,

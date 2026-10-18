@@ -47,4 +47,4 @@ jobs:
           # vX.Y.Z-PHASE.N (pre-alpha, alpha, beta, rc) is marked as a pre-release.
           prerelease=()
           [[ $TAG == *-* ]] && prerelease=(--prerelease)
-          gh release create "$TAG" --title "nixcraft $TAG" --notes-file notes.md --verify-tag "${prerelease[@]}"
+          gh release create "$TAG" --title "nyxcraft $TAG" --notes-file notes.md --verify-tag "${prerelease[@]}"

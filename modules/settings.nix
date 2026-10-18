@@ -38,7 +38,7 @@ in
     };
     repoPath = mkOption {
       type = types.str;
-      default = "/home/${config.username}/nixcraft";
+      default = "/home/${config.username}/nyxcraft";
       description = "Where this repo is cloned; config/ is linked into ~/.config from here.";
     };
 

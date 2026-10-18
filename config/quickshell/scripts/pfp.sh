@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Profile picture: ~/.face, read by the shell (components/material/Avatar.qml)
-# and, through the nixcraft-pfp-sync unit (modules/system/sddm), by the login
-# screen. Without one, both show nixcraft's default, assets/pfp.png.
+# and, through the nyxcraft-pfp-sync unit (modules/system/sddm), by the login
+# screen. Without one, both show nyxcraft's default, assets/pfp.png.
 #
 #   pfp.sh pick         choose an image in a file dialog, then set it
 #   pfp.sh set IMAGE    set IMAGE (cropped to a 512px square)

@@ -25,10 +25,10 @@ done
 
 themes_root="${XDG_DATA_HOME:-$HOME/.local/share}/themes"
 
-if [ "$(dconf read /org/gnome/desktop/interface/gtk-theme 2>/dev/null)" = "'nixcraft-a'" ]; then
-    slot=nixcraft-b
+if [ "$(dconf read /org/gnome/desktop/interface/gtk-theme 2>/dev/null)" = "'nyxcraft-a'" ]; then
+    slot=nyxcraft-b
 else
-    slot=nixcraft-a
+    slot=nyxcraft-a
 fi
 
 # The theme files only define the core palette; everything else would fall
