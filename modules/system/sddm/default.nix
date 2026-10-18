@@ -51,6 +51,19 @@ in
       CursorTheme = "Mocu-Black-Right";
       CursorSize = "24";
     };
+    # SDDM's X11 server has the cursor theme configured above, but Qt's greeter
+    # also needs its own theme and search path to find the Nix store assets.
+    services.displayManager.sddm.settings.General.GreeterEnvironment = lib.mkForce
+      "QML2_IMPORT_PATH=${config.programs.silentSDDM.package'}/share/sddm/themes/silent/components/,QT_IM_MODULE=qtvirtualkeyboard,XCURSOR_THEME=Mocu-Black-Right,XCURSOR_SIZE=24,XCURSOR_PATH=${mocu-xcursor}/share/icons";
+    # Set the X server's cursor resources as well; SDDM/Qt can ignore the
+    # theme name from sddm.conf unless it is present in the X resource database.
+    services.displayManager.sddm.setupScript = ''
+      export XCURSOR_PATH="${mocu-xcursor}/share/icons:/run/current-system/sw/share/icons"
+      ${pkgs.xorg.xrdb}/bin/xrdb -merge - <<'EOF'
+      Xcursor.theme: Mocu-Black-Right
+      Xcursor.size: 24
+      EOF
+    '';
 
     systemd.tmpfiles.rules = lib.mkIf (cfg.avatar != null) [
       "f+ /var/lib/AccountsService/users/${cfg.user} 0600 root root - [User]\\nIcon=/var/lib/AccountsService/icons/${cfg.user}\\n"
