@@ -8,6 +8,7 @@
 }:
 let
   cfg = config.systemSettings.sddm;
+  mocu-xcursor = pkgs.callPackage ../../user/looks/mocu-xcursor.nix { };
 in
 {
   imports = [ inputs.silentSDDM.nixosModules.default ];
@@ -33,6 +34,12 @@ in
     programs.silentSDDM = {
       enable = true;
       theme = cfg.theme;
+    };
+
+    environment.systemPackages = [ mocu-xcursor ];
+    services.displayManager.sddm.settings.Theme = {
+      CursorTheme = "Mocu-Black-Right";
+      CursorSize = "24";
     };
 
     systemd.tmpfiles.rules = lib.mkIf (cfg.avatar != null) [
