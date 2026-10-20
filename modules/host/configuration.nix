@@ -30,8 +30,6 @@
     systemSettings.sddm.enable = true;
 
     services.journald.settings.Journal.Storage = "persistent";
-    services.flatpak.enable = true;
-
     services.gnome.gnome-keyring.enable = true;
     services.displayManager.ly.enable = false;
     security.pam.services.ly.enableGnomeKeyring = true;
