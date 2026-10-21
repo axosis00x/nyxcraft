@@ -113,18 +113,27 @@ Item {
     // Some browser MPRIS players briefly report length as the current
     // position even while lengthSupported is stale/true. Don't treat that
     // mirrored value as a track duration or the progress appears complete.
-    readonly property bool nativeLength: !!player && player.lengthSupported && player.length > player.position + 0.5
+    // Treat implausibly large durations as unbounded (live/unknown). Some
+    // MPRIS players expose the largest integer as a placeholder for live media.
+    readonly property real maxTrackLength: 100 * 365 * 24 * 60 * 60
+    readonly property bool nativeLength: !!player && player.lengthSupported
+        && isFinite(player.length) && player.length > player.position + 0.5
+        && player.length <= maxTrackLength
     property real fallbackLength: 0
+    property bool fallbackIsLive: false
     // Prefer the raw metadata duration when present. This avoids relying on
     // lengthSupported, which browser players can update after playback starts.
-    readonly property real metadataLength: {
+    readonly property real rawMetadataLength: {
         if (!player || !player.metadata)
             return 0;
         var value = Number(player.metadata["mpris:length"]);
-        return isFinite(value) && value > 0 ? value / 1000000 : 0;
+        return isFinite(value) && value > 0 ? value : 0;
     }
+    readonly property bool metadataIsLive: rawMetadataLength / 1000000 > maxTrackLength
+    readonly property real metadataLength: rawMetadataLength > 0 && !metadataIsLive ? rawMetadataLength / 1000000 : 0
     readonly property real trackLength: metadataLength > 0 ? metadataLength : (nativeLength ? player.length : fallbackLength)
     readonly property bool lengthKnown: !!player && trackLength > 0
+    readonly property bool liveTrack: metadataIsLive || fallbackIsLive
 
     // Read once per track (and refreshed while the panel is open, since the
     // browser can publish the length a moment after the title).
@@ -139,7 +148,9 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 var m = text.match(/"mpris:length" [xt] (\d+)/);
-                root.fallbackLength = m ? Number(m[1]) / 1000000 : 0;
+                var seconds = m ? Number(m[1]) / 1000000 : 0;
+                root.fallbackIsLive = isFinite(seconds) && seconds > root.maxTrackLength;
+                root.fallbackLength = isFinite(seconds) && seconds > 0 && seconds <= root.maxTrackLength ? seconds : 0;
             }
         }
     }
@@ -157,11 +168,13 @@ Item {
         ignoreUnknownSignals: true
         function onPostTrackChanged() {
             root.fallbackLength = 0;
+            root.fallbackIsLive = false;
             root.readFallbackLength();
         }
     }
     onPlayerChanged: {
         fallbackLength = 0;
+        fallbackIsLive = false;
         readFallbackLength();
     }
 
@@ -184,6 +197,10 @@ Item {
             return "0:00";
         var total = Math.floor(seconds);
         var sec = total % 60;
+        var minutes = Math.floor((total % 3600) / 60);
+        var hours = Math.floor(total / 3600);
+        if (hours > 0)
+            return hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (sec < 10 ? "0" : "") + sec;
         return Math.floor(total / 60) + ":" + (sec < 10 ? "0" : "") + sec;
     }
 
@@ -656,8 +673,8 @@ Item {
                 Text {
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.lengthKnown
-                    text: root.formatTime(root.trackLength)
+                    visible: root.lengthKnown || root.liveTrack
+                    text: root.lengthKnown ? root.formatTime(root.trackLength) : "LIVE"
                     color: Palette.Theme.textMuted
                     font.family: Palette.Theme.fontMono
                     font.pixelSize: Palette.Theme.fontSizeXs

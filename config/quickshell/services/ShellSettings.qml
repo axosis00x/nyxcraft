@@ -54,14 +54,24 @@ Item {
             return;
         store[key] = clean(key, value);
         apply();
-        saveTimer.restart();
+        // Persist the glyph toggle immediately so a quick config reload
+        // cannot interrupt the debounce timer before it writes the change.
+        if (key === "showGlyph")
+            saveNow();
+        else
+            saveTimer.restart();
     }
 
     function reset() {
         for (var key in defaults)
             store[key] = defaults[key];
         apply();
-        saveTimer.restart();
+        saveNow();
+    }
+
+    function saveNow() {
+        saveTimer.stop();
+        settingsFile.writeAdapter();
     }
 
     // Pushes the (cleaned) values into the theme, where everything reads them.
@@ -89,6 +99,7 @@ Item {
         id: settingsFile
         path: Quickshell.cachePath("shell-settings.json")
         watchChanges: false
+        // Apply saved values before the settings UI and theme are created.
         blockLoading: true
         onLoaded: root.apply()
         onLoadFailed: error => {
