@@ -32,7 +32,7 @@ in
       wireguard-tools
       (callPackage ./helium.nix { })
       libreoffice-stable
-      errands
+      # errands
       zathura
       zathuraPkgs.zathura_pdf_poppler
       obsidian
