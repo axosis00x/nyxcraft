@@ -18,7 +18,9 @@ ColumnLayout {
 
     Item {
         Layout.fillWidth: true
-        implicitHeight: topCard.implicitHeight
+        // The two offset stack layers extend below the main card. Include that
+        // depth in the delegate size so they cannot overlap the next group.
+        implicitHeight: topCard.implicitHeight + (!root.expanded ? Math.min(2, root.group.items.length - 1) * 6 : 0)
 
         Repeater {
             model: root.expanded ? 0 : Math.min(2, root.group.items.length - 1)
@@ -45,17 +47,24 @@ ColumnLayout {
             id: topCard
             width: parent.width
             notification: root.group.items[0]
-            iconSource: root.notificationCenter ? root.notificationCenter.notificationIcon(root.group.items[0]) : ""
+            iconSource: root.notificationCenter ? root.notificationCenter.notificationImage(root.group.items[0]) : ""
+            sourceIconSource: root.notificationCenter ? root.notificationCenter.notificationSourceIcon(root.group.items[0]) : ""
             bodyText: root.notificationCenter ? root.notificationCenter.scrub(root.group.items[0].body) : ""
             actionTarget: root.notificationCenter ? root.notificationCenter.liveNotification(root.group.items[0]) : null
             canDismiss: root.group.items[0].live
-            dismissOnActivate: false
+            dismissOnActivate: !root.hasStack
+                && root.notificationCenter
+                && root.notificationCenter.hasDefaultAction(root.group.items[0])
+            expandable: root.hasStack
+            expanded: root.expanded
             onDismissed: root.notificationCenter.dismissRecord(root.group.items[0])
-            compact: root.hasStack || !root.featured
-            count: root.expanded ? 1 : root.group.items.length
+            compact: (root.hasStack && !root.expanded) || !root.featured
+            count: root.group.items.length
             onActivated: {
                 if (root.hasStack)
                     root.notificationCenter.toggleGroup(root.group.appName);
+                else
+                    root.notificationCenter.invokeDefaultAction(root.group.items[0]);
             }
         }
     }
@@ -71,21 +80,16 @@ ColumnLayout {
                 required property var modelData
                 Layout.fillWidth: true
                 notification: modelData
-                iconSource: root.notificationCenter ? root.notificationCenter.notificationIcon(modelData) : ""
+                iconSource: root.notificationCenter ? root.notificationCenter.notificationImage(modelData) : ""
+                sourceIconSource: root.notificationCenter ? root.notificationCenter.notificationSourceIcon(modelData) : ""
                 bodyText: root.notificationCenter ? root.notificationCenter.scrub(modelData.body) : ""
                 actionTarget: root.notificationCenter ? root.notificationCenter.liveNotification(modelData) : null
                 canDismiss: modelData.live
-                dismissOnActivate: false
+                dismissOnActivate: root.notificationCenter && root.notificationCenter.hasDefaultAction(modelData)
+                onActivated: root.notificationCenter.invokeDefaultAction(modelData)
                 onDismissed: root.notificationCenter.dismissRecord(modelData)
             }
         }
     }
 
-    ActionChip {
-        visible: root.hasStack
-        Layout.alignment: Qt.AlignHCenter
-        label: root.expanded ? "Collapse" : "View all (" + root.group.items.length + ")"
-        active: root.expanded
-        onClicked: root.notificationCenter.toggleGroup(root.group.appName)
-    }
 }

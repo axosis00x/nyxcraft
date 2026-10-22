@@ -10,10 +10,14 @@ Surface {
     required property var notification
     property bool compact: false
     property string iconSource: ""
+    property string sourceIconSource: ""
     property string bodyText: ""
     property var actionTarget: notification
     property bool canDismiss: true
     property bool dismissOnActivate: true
+    property bool expandable: false
+    property bool expanded: false
+    property int clockTick: 0
     signal dismissed
     signal activated
     function actionLabel(action) {
@@ -49,7 +53,7 @@ Surface {
     readonly property bool open: !compact || cardHover.hovered
     readonly property bool critical: notification && notification.urgency === NotificationUrgency.Critical
     // How many notifications this card stands for (a stacked group), shown
-    // as a pill beside the app name.
+    // as a pill beside the title.
     property int count: 1
 
     height: implicitHeight
@@ -70,14 +74,14 @@ Surface {
         SpatialMotion {}
     }
 
-    // Keeps the "Xm ago" label advancing while the panel stays open, rather
-    // than freezing at whatever it read on first render.
+    // Refresh the time binding periodically. Keeping this as a property
+    // change means ListView can safely reuse a card for another notification.
     Timer {
         interval: 30000
         running: !!(card.notification && card.notification.receivedAt)
         repeat: true
         triggeredOnStart: false
-        onTriggered: timeAgoText.text = card.timeAgo(card.notification.receivedAt)
+        onTriggered: card.clockTick++
     }
 
     // Hover over the whole card, including its buttons.
@@ -95,10 +99,11 @@ Surface {
         id: cardMouse
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: card.expandable || card.dismissOnActivate ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
+            var dismiss = card.dismissOnActivate;
             card.activated();
-            if (card.dismissOnActivate)
+            if (dismiss)
                 card.dismissNotification();
         }
     }
@@ -114,16 +119,18 @@ Surface {
         }
         spacing: 12
 
-        // The app's image, or a bell on a tonal circle when there is none.
+        // Use the sender avatar as the full tile and badge it with the source
+        // app icon. The source icon fills the tile when there is no avatar.
         ClippingRectangle {
             Layout.alignment: Qt.AlignTop
-            implicitWidth: 36
-            implicitHeight: 36
-            radius: icon.status === Image.Ready ? Palette.Theme.radiusXs + 2 : width / 2
-            color: icon.status === Image.Ready ? "transparent" : Qt.alpha(card.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(card.notification ? card.notification.appName : ""), Palette.Theme.stateSelected)
+            Layout.preferredWidth: 48
+            implicitWidth: 48
+            implicitHeight: 48
+            radius: Palette.Theme.radiusSmall
+            color: "transparent"
 
             Image {
-                id: icon
+                id: avatar
                 anchors.fill: parent
                 source: card.iconSource
                 fillMode: Image.PreserveAspectCrop
@@ -140,9 +147,30 @@ Surface {
                 }
             }
 
+            Image {
+                id: sourceIcon
+                anchors.fill: parent
+                source: card.sourceIconSource
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                asynchronous: true
+                sourceSize.width: 128
+                sourceSize.height: 128
+                visible: avatar.status !== Image.Ready && status === Image.Ready
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
+                radius: Palette.Theme.radiusSmall
+                color: Qt.tint(Palette.Theme.surfaceContainerHigh, Qt.alpha(card.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(card.notification ? card.notification.appName : ""), Palette.Theme.stateSelected))
+                border.width: 1
+                border.color: Palette.Theme.outlineSoft
+            }
+
             Text {
                 anchors.centerIn: parent
-                visible: icon.status !== Image.Ready
+                visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
                 text: card.critical ? "priority_high" : "notifications"
                 // Each app gets its own stable hue.
                     color: card.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(card.notification ? card.notification.appName : "")
@@ -150,42 +178,57 @@ Surface {
                 font.weight: Palette.Theme.iconWeight
                 font.pixelSize: Palette.Theme.iconSize
             }
+
+            Item {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                width: 22
+                height: 22
+                visible: avatar.status === Image.Ready && sourceIcon.status === Image.Ready
+
+                Image {
+                    anchors.fill: parent
+                    source: card.sourceIconSource
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    asynchronous: true
+                    sourceSize.width: 64
+                    sourceSize.height: 64
+                }
+            }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
+            Layout.minimumWidth: 0
             spacing: 2
 
-            // Title · app ..........  time  [count]  ✕
+            // Title .......... time  [count]  ✕
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 22
+                Layout.minimumWidth: 0
                 spacing: 6
 
                 Text {
                     Layout.fillWidth: true
-                    Layout.maximumWidth: implicitWidth
+                    Layout.minimumWidth: 0
                     text: card.notification ? (card.notification.summary || "Notification") : ""
                     color: Palette.Theme.textPrimary
                     font.family: Palette.Theme.fontSans
                     font.pixelSize: Palette.Theme.fontSizeBody
                     font.weight: Font.DemiBold
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    Layout.fillWidth: true
-                    text: card.notification ? "·  " + (card.notification.appName || "Application") : ""
-                    color: Palette.Theme.textMuted
-                    font.family: Palette.Theme.fontSans
-                    font.pixelSize: Palette.Theme.fontSizeXs
+                    wrapMode: Text.WrapAnywhere
+                    maximumLineCount: 3
                     elide: Text.ElideRight
                 }
 
                 Text {
                     id: timeAgoText
                     visible: text !== ""
-                    text: card.notification ? card.timeAgo(card.notification.receivedAt) : ""
+                    text: {
+                        card.clockTick;
+                        return card.notification ? card.timeAgo(card.notification.receivedAt) : "";
+                    }
                     color: Palette.Theme.textMuted
                     font.family: Palette.Theme.fontSans
                     font.pixelSize: Palette.Theme.fontSizeXs
@@ -193,19 +236,33 @@ Surface {
 
                 Rectangle {
                     visible: card.count > 1
-                    implicitWidth: Math.max(20, countText.implicitWidth + 10)
+                    implicitWidth: Math.max(22, countText.implicitWidth + (card.expandable ? 30 : 10))
                     implicitHeight: 18
                     radius: height / 2
                     color: Palette.Theme.accentTonal
 
                     Text {
                         id: countText
-                        anchors.centerIn: parent
+                        anchors.left: parent.left
+                        anchors.leftMargin: 7
+                        anchors.verticalCenter: parent.verticalCenter
                         text: card.count
                         color: Palette.Theme.accent
                         font.family: Palette.Theme.fontSans
                         font.pixelSize: Palette.Theme.fontSizeXs
                         font.weight: Font.DemiBold
+                    }
+
+                    Text {
+                        visible: card.expandable
+                        anchors.right: parent.right
+                        anchors.rightMargin: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: card.expanded ? "expand_less" : "expand_more"
+                        color: Palette.Theme.accent
+                        font.family: Palette.Theme.fontIcons
+                        font.weight: Palette.Theme.iconWeight
+                        font.pixelSize: Palette.Theme.iconSizeSmall
                     }
                 }
 
@@ -213,25 +270,27 @@ Surface {
 
             Text {
                 text: card.bodyText
+                textFormat: Text.PlainText
+                Layout.minimumWidth: 0
                 color: Palette.Theme.textSecondary
                 font.family: Palette.Theme.fontSans
                 font.pixelSize: Palette.Theme.fontSizeSmall
                 lineHeight: 1.15
-                wrapMode: Text.WordWrap
-                maximumLineCount: card.open ? 5 : 2
+                wrapMode: Text.WrapAnywhere
+                maximumLineCount: card.open ? 5 : 3
                 elide: Text.ElideRight
                 visible: text !== ""
                 Layout.fillWidth: true
                 Layout.rightMargin: 4
             }
 
-            RowLayout {
+            Flow {
                 Layout.fillWidth: true
                 Layout.topMargin: 6
                 spacing: 8
-                visible: card.actionTarget && card.actionTarget.actions.length > 0
+                visible: card.actionTarget && card.actionTarget.actions && card.actionTarget.actions.length > 0
                 Repeater {
-                    model: card.actionTarget ? card.actionTarget.actions : []
+                    model: card.actionTarget && card.actionTarget.actions ? card.actionTarget.actions : []
                     delegate: ActionChip {
                         required property var modelData
                         label: card.actionLabel(modelData)
@@ -246,7 +305,6 @@ Surface {
                             var c = card;
                             var dismiss = c.canDismiss && c.actionTarget && !c.actionTarget.resident;
                             modelData.invoke();
-                            c.activated();
                             if (dismiss)
                                 c.dismissNotification();
                         }

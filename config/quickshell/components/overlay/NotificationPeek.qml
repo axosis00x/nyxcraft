@@ -6,9 +6,9 @@ import "../material"
 import "../../theme" as Palette
 
 // A new notification, morphing out of the top notch (CenterOverlay puts it
-// on the top stage while no top panel is open). Minimal: icon, title with
-// the app beside it, one line of body. Hovering holds it open and unfolds
-// the rest of the body and any actions; clicking runs its default action.
+// on the top stage while no top panel is open). Minimal: sender image, title,
+// and a short body preview. Hovering holds it open and unfolds the rest of
+// the body and any actions; clicking runs its default action.
 Item {
     id: root
 
@@ -32,7 +32,18 @@ Item {
 
     function hide() {
         if (center)
-            center.toastVisible = false;
+            center.hideToast();
+    }
+
+    function invokeAction(action) {
+        var current = root.notification;
+        if (!current || !action)
+            return;
+        var dismiss = !current.resident;
+        root.hide();
+        action.invoke();
+        if (dismiss && current && current.tracked)
+            current.dismiss();
     }
 
     HoverHandler {
@@ -48,7 +59,7 @@ Item {
             var list = root.notification ? root.notification.actions : [];
             for (var i = 0; i < list.length; i++) {
                 if (list[i].identifier === "default") {
-                    list[i].invoke();
+                    root.invokeAction(list[i]);
                     break;
                 }
             }
@@ -70,18 +81,21 @@ Item {
             Layout.fillWidth: true
             spacing: 12
 
-            // The app's image, or a bell on a tonal disc.
+            // Fill the notification row with the sender avatar, and badge it
+            // with the source app icon. If there is no avatar, show the app
+            // icon in the full tile.
             ClippingRectangle {
                 Layout.alignment: Qt.AlignTop
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: icon.status === Image.Ready ? Palette.Theme.radiusXs : width / 2
-                color: icon.status === Image.Ready ? "transparent" : Qt.alpha(root.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(root.notification ? root.notification.appName : ""), Palette.Theme.stateSelected)
+                Layout.preferredWidth: 48
+                implicitWidth: 48
+                implicitHeight: 48
+                radius: Palette.Theme.radiusSmall
+                color: "transparent"
 
                 Image {
-                    id: icon
+                    id: avatar
                     anchors.fill: parent
-                    source: root.center && root.notification ? root.center.notificationIcon(root.notification) : ""
+                    source: root.center && root.notification ? root.center.notificationImage(root.notification) : ""
                     fillMode: Image.PreserveAspectCrop
                     sourceSize.width: 64
                     sourceSize.height: 64
@@ -89,9 +103,29 @@ Item {
                     visible: status === Image.Ready
                 }
 
+                Image {
+                    id: sourceIcon
+                    anchors.fill: parent
+                    source: root.center && root.notification ? root.center.notificationSourceIcon(root.notification) : ""
+                    fillMode: Image.PreserveAspectFit
+                    sourceSize.width: 64
+                    sourceSize.height: 64
+                    asynchronous: true
+                    visible: avatar.status !== Image.Ready && status === Image.Ready
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
+                    radius: Palette.Theme.radiusSmall
+                    color: Qt.tint(Palette.Theme.surfaceContainerHigh, Qt.alpha(root.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(root.notification ? root.notification.appName : ""), Palette.Theme.stateSelected))
+                    border.width: 1
+                    border.color: Palette.Theme.outlineSoft
+                }
+
                 Text {
                     anchors.centerIn: parent
-                    visible: icon.status !== Image.Ready
+                    visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
                     text: root.critical ? "priority_high" : "notifications"
                     // Each app gets its own stable hue.
                     color: root.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(root.notification ? root.notification.appName : "")
@@ -99,47 +133,64 @@ Item {
                     font.weight: Palette.Theme.iconWeight
                     font.pixelSize: Palette.Theme.iconSizeSmall
                 }
+
+                Item {
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    width: 22
+                    height: 22
+                    visible: avatar.status === Image.Ready && sourceIcon.status === Image.Ready
+
+                    Image {
+                        anchors.fill: parent
+                        source: root.center && root.notification ? root.center.notificationSourceIcon(root.notification) : ""
+                        fillMode: Image.PreserveAspectFit
+                        sourceSize.width: 48
+                        sourceSize.height: 48
+                        asynchronous: true
+                    }
+                }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 2
 
                 RowLayout {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 6
 
                     Text {
                         Layout.fillWidth: true
-                        Layout.maximumWidth: implicitWidth
+                        Layout.minimumWidth: 0
                         text: root.notification ? (root.notification.summary || "Notification") : ""
                         color: Palette.Theme.textPrimary
                         font.family: Palette.Theme.fontSans
                         font.pixelSize: Palette.Theme.fontSizeBody
                         font.weight: Font.DemiBold
+                        wrapMode: Text.WrapAnywhere
+                        // Notification titles often contain the sender's full
+                        // name. Give them enough lines to wrap before eliding.
+                        maximumLineCount: 3
                         elide: Text.ElideRight
                     }
 
-                    Text {
-                        Layout.fillWidth: true
-                        text: root.notification && root.notification.appName ? "·  " + root.notification.appName : ""
-                        color: Palette.Theme.textMuted
-                        font.family: Palette.Theme.fontSans
-                        font.pixelSize: Palette.Theme.fontSizeXs
-                        elide: Text.ElideRight
-                    }
                 }
 
                 Text {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     visible: text !== ""
                     text: root.center && root.notification ? root.center.scrub(root.notification.body) : ""
+                    textFormat: Text.PlainText
                     color: Palette.Theme.textSecondary
                     font.family: Palette.Theme.fontSans
                     font.pixelSize: Palette.Theme.fontSizeSmall
-                    wrapMode: Text.WordWrap
-                    maximumLineCount: root.open ? 3 : 1
+                    wrapMode: Text.WrapAnywhere
+                    maximumLineCount: root.open ? 4 : 2
                     elide: Text.ElideRight
                 }
             }
@@ -164,8 +215,9 @@ Item {
         }
 
         // Actions, unfolded while hovered.
-        Row {
-            Layout.leftMargin: 48
+        Flow {
+            Layout.fillWidth: true
+            Layout.leftMargin: 60
             visible: root.open && root.actions.length > 0
             spacing: 6
 
@@ -182,8 +234,7 @@ Item {
                     // which destroys this chip mid-handler.
                     onClicked: {
                         var action = modelData;
-                        root.hide();
-                        action.invoke();
+                        root.invokeAction(action);
                     }
                 }
             }
