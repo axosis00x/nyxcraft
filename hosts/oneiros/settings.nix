@@ -38,7 +38,7 @@
   # Optional software groups; the desktop is always installed.
   features = {
     virtualization = true; # virt-manager/libvirt VMs
-    games = true; # Steam
+    games = false; # Steam
     coding = true; # editors (Neovim, Zed), language toolchains, Claude Code
     apps = true; # browsers, Discord, LibreOffice, OBS, LocalSend, Obsidian…
     extras = true; # terminal toys and monitors (btop, cava, fastfetch, cmatrix…)
