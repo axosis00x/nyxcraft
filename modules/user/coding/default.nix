@@ -22,7 +22,7 @@ in
 
       # languages & runtimes
       jdk21
-      nodejs_24
+      nodejs_26
       bun
       python3
       maven
