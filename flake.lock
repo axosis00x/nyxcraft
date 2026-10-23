@@ -199,11 +199,11 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1792768498,
-        "narHash": "sha256-RWszL0EQPm7Cvn5i/avb3T6OR6NX7yA7jKeCa0IBBHk=",
+        "lastModified": 1792768919,
+        "narHash": "sha256-5QWZptVbjvz4igxzhJhSnL+r2ajLbbWgeN5NT3sZIDM=",
         "owner": "axosis00x",
         "repo": "moomer",
-        "rev": "568a716d5f65e4bfc17b8f6e59fcf22642ff0267",
+        "rev": "04f7f9ebd61e71f521f226cd7f84d0d893f5b9f4",
         "type": "github"
       },
       "original": {
