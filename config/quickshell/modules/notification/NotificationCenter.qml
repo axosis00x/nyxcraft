@@ -189,19 +189,30 @@ Scope {
         return "";
     }
 
+    function themeIconPath(iconName) {
+        if (!iconName || !Quickshell.hasThemeIcon(iconName))
+            return "";
+        return Quickshell.iconPath(iconName);
+    }
+
     function notificationSourceIcon(notification) {
         if (!notification)
             return "";
         var iconName = notificationSourceIconName(notification);
         if (!iconName)
             return "";
-        if (/^(\/|file:|qrc:|image:)/.test(iconName))
+        if (/^(\/|file:|qrc:)/.test(iconName))
             return iconName;
-        var icon = Quickshell.iconPath(iconName, true);
+        // Notification appIcon should be a theme name or a file URL. Treat
+        // image-provider URLs as untrusted here: a stale qsimage handle can
+        // render Quickshell's purple missing-texture tile.
+        if (/^image:/i.test(iconName))
+            iconName = "";
+        var icon = themeIconPath(iconName);
         if (icon)
             return icon;
         var browserIcon = browserIconName(notification);
-        return browserIcon ? Quickshell.iconPath(browserIcon, true) : "";
+        return themeIconPath(browserIcon);
     }
 
     function remember(notification) {
