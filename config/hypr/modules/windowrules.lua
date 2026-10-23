@@ -45,6 +45,14 @@ for _, class in ipairs({ "zen-twilight", "vesktop", "helium" }) do
     })
 end
 
+-- Moomer captures the screen as it opens; window transitions cause visible
+-- flicker around its fullscreen overlay and when it closes with Escape.
+hl.window_rule({
+    name = "moomer-no-animation",
+    match = { title = "^(moomer)$" },
+    no_anim = true,
+})
+
 hl.window_rule({
     name = "suppress-maximize",
     match = {

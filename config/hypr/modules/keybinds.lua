@@ -195,3 +195,5 @@ hl.bind("SUPER + X", zoom_reset)
 -- optional: keyboard zoom
 hl.bind("SUPER + equal", zoom_in)
 hl.bind("SUPER + minus", zoom_out)
+
+hl.bind("ALT + Z", app("moomer"))
