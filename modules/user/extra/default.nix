@@ -31,6 +31,7 @@ in
       peaclock
       cbonsai
       inputs.momoi-say.packages.${pkgs.stdenv.hostPlatform.system}.momoisay
+      inputs.moomer.packages.${pkgs.stdenv.hostPlatform.system}.default
     ];
   };
 }

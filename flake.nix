@@ -34,6 +34,11 @@
       url = "github:BlueManCZ/hyprmod";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    moomer = {
+      url = "github:axosis00x/moomer";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
   outputs =
     inputs:
