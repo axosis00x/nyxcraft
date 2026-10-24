@@ -26,6 +26,7 @@ in
       satty
       wf-recorder
       hyprshot
+      ani-cli
     ];
   };
 }
