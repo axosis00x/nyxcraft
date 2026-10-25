@@ -1,0 +1,68 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The same checks as `nix flake check` on your own machine (flake.nix):
+  # every host evaluates, Nix files are formatted, shell scripts pass
+  # shellcheck and Lua files parse.
+  flake:
+    name: nix flake check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: nix flake check --print-build-logs
+
+  version:
+    name: Version and changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: version is X.Y.Z[-PHASE.N] and has a changelog entry
+        run: |
+          version=$(tr -d '[:space:]' < version)
+          [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(pre-alpha|alpha|beta|rc)\.[1-9][0-9]*)?$ ]] ||
+            { echo "::error file=version::not X.Y.Z or X.Y.Z-PHASE.N: $version"; exit 1; }
+          if [[ $version != 0.0.0 ]]; then
+            scripts/release.sh notes > /dev/null || { echo "::error file=CHANGELOG.md::no entry for $version"; exit 1; }
+          fi
+
+  commits:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check new commit subjects
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # A new branch has no "before"; check just the pushed commit then.
+          if [[ -z $BASE || $BASE =~ ^0+$ ]] || ! git cat-file -e "$BASE" 2>/dev/null; then
+            range=("$HEAD" -1)
+          else
+            range=("$BASE..$HEAD")
+          fi
+          pattern='^((feat|fix|perf|refactor|style|docs|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .+|Merge .+|Revert ".+")$'
+          bad=0
+          while IFS= read -r line; do
+            subject=${line#* }
+            if ! grep -qP "$pattern" <<< "$subject"; then
+              echo "::error::${line%% *} is not a Conventional Commit: $subject"
+              bad=1
+            fi
+          done < <(git log --format='%h %s' "${range[@]}")
+          exit $bad

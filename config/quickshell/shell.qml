@@ -1,0 +1,173 @@
+//@ pragma DropExpensiveFonts
+import Quickshell
+import Quickshell.Io
+import QtQuick
+import "modules/bar"
+import "components/overlay"
+import "modules/notification"
+import "modules/osd"
+import "modules/workspaces"
+import "modules/lockscreen"
+import "modules/idle"
+import "services"
+import "widgets"
+import "modules/settings"
+
+ShellRoot {
+    id: root
+    NotificationCenter {
+        id: notificationCenter
+    }
+    BarLayoutService {
+        id: barLayoutService
+    }
+    WidgetsService {
+        id: widgetsService
+    }
+    DesktopWidgetsLayer {
+        widgetsService: widgetsService
+    }
+    CenterOverlay {
+        id: overlay
+        notificationCenter: notificationCenter
+        bar: barLoader.item
+        idleService: idleService
+        barLayout: barLayoutService
+        settingsWindow: settingsWindow
+        widgetsService: widgetsService
+    }
+    // Settings → Customize: loaded first thing, applied to the theme tokens.
+    ShellSettings {
+        id: shellSettings
+    }
+    SettingsWindow {
+        id: settingsWindow
+        shellSettings: shellSettings
+        controlCenter: overlay.controlCenter
+        widgetsService: widgetsService
+        themeService: overlay.themes
+        barLayout: barLayoutService
+        // A centered window and the overlay both grab the keyboard, so only one at a time.
+        onAboutToOpen: overlay.closeActive()
+    }
+    WorkspacesService {
+        id: workspacesServiceInstance
+    }
+    WorkspaceOverview {
+        id: workspaceOverview
+        service: workspacesServiceInstance
+    }
+    Osd {
+        id: mainOsd
+    }
+    // Rounded screen corners and edge frame, in notch mode.
+    ScreenFrame {
+        barLayout: barLayoutService
+    }
+    LockScreen {
+        id: lockScreen
+    }
+    // Never hot-reload while the session is locked: a reload tears down the
+    // lock surfaces mid-lock, which aborts Quickshell ("Tried to show
+    // lockscreen surfaces without active lock") and leaves Hyprland on its
+    // crashed-lockscreen screen. Edits made while locked apply on unlock.
+    Binding {
+        target: Quickshell
+        property: "watchFiles"
+        value: !lockScreen.isLocked
+    }
+    IdleService {
+        id: idleService
+        lockScreen: lockScreen
+    }
+    IpcHandler {
+        target: "controlcenter"
+        function toggle(): void {
+            root.toggleControlCenter();
+        }
+        function open(): void {
+            root.openControlCenter();
+        }
+        function close(): void {
+            root.closeControlCenter();
+        }
+        // Straight to a dashboard tab: overview, controls, notifications, performance.
+        function tab(name: string): void {
+            if (overlay.controlCenter)
+                overlay.controlCenter.openTab(name);
+        }
+        // Straight to the Wi-Fi / Bluetooth lists.
+        function wifi(): void {
+            root.openControlCenterDetail("wifi");
+        }
+        function bluetooth(): void {
+            root.openControlCenterDetail("bluetooth");
+        }
+    }
+    function openControlCenterDetail(mode) {
+        var c = overlay.controlCenter;
+        if (!c)
+            return;
+        c.openControlCenter();
+        c.detailMode = mode;
+    }
+    function openControlCenter() {
+        if (overlay.controlCenter)
+            overlay.controlCenter.openControlCenter();
+    }
+    function closeControlCenter() {
+        if (overlay.controlCenter)
+            overlay.controlCenter.closeControlCenter();
+    }
+    function toggleControlCenter() {
+        if (overlay.controlCenter)
+            overlay.controlCenter.toggleControlCenter();
+    }
+    IpcHandler {
+        target: "mediapanel"
+        function toggle(): void {
+            root.toggleMediaPanel();
+        }
+    }
+    function toggleMediaPanel() {
+        if (overlay.mediaPanel)
+            overlay.mediaPanel.toggleMediaPanel();
+    }
+    IpcHandler {
+        target: "shell"
+        function reload(): void {
+            // Same reason as watchFiles above.
+            if (!lockScreen.isLocked)
+                Quickshell.reload(false);
+        }
+    }
+    // Deferred behind barLayoutService.loaded: BarLayoutService's persisted
+    // "vertical" value briefly holds its declared default before the
+    // JSON file underneath it actually resolves, and the bar's anchors bind
+    // to that value directly with no QML Behavior to smooth it over — so a
+    // wrong-then-right flip on reload isn't an animation to suppress, it's
+    // the compositor reacting to two real geometry changes. Not
+    // constructing the bar at all until the real value is in means it only
+    // ever gets built once, with the right one.
+    Loader {
+        id: barLoader
+        active: barLayoutService.loaded
+
+        sourceComponent: Bar {
+            osd: mainOsd
+            barLayout: barLayoutService
+            workspacesService: workspacesServiceInstance
+            launcher: overlay.launcher
+            controlCenter: overlay.controlCenter
+            powerMenu: overlay.powerMenu
+            themePicker: overlay.themePicker
+            clipboard: overlay.clipboard
+            mediaPanel: overlay.mediaPanel
+            toolMenu: overlay.toolMenu
+            calendarPicker: overlay.calendarPicker
+            ensureControlCenter: function () {
+                return overlay.controlCenter;
+            }
+        }
+    }
+}

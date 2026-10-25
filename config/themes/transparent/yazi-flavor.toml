@@ -1,0 +1,133 @@
+# Yazi flavor — Transparent
+# Installed as ~/.config/yazi/flavors/nyxcraft.yazi/flavor.toml by apply-theme.sh.
+# Overrides only the style colors; icon/filetype tables stay in theme.toml.
+
+[app]
+overall = {}
+
+[mgr]
+cwd = { fg = "#9ecbff" }
+
+find_keyword  = { fg = "#ffd08a", bold = true, italic = true, underline = true }
+find_position = { fg = "#c9b8ff", bg = "reset", bold = true, italic = true }
+
+symlink_target = { italic = true }
+
+marker_copied   = { fg = "#8ff0b4", bg = "#8ff0b4" }
+marker_cut      = { fg = "#ff8a9b", bg = "#ff8a9b" }
+marker_marked   = { fg = "#9ecbff", bg = "#9ecbff" }
+marker_selected = { fg = "#ffd08a", bg = "#ffd08a" }
+marker_symbol   = "│"
+
+count_copied   = { fg = "#0a0c12", bg = "#8ff0b4" }
+count_cut      = { fg = "#0a0c12", bg = "#ff8a9b" }
+count_selected = { fg = "#0a0c12", bg = "#ffd08a" }
+
+border_symbol = "│"
+border_style  = { fg = "#566678" }
+
+syntect_theme = ""
+
+[tabs]
+active   = { bg = "#9ecbff", bold = true }
+inactive = { fg = "#9ecbff", bg = "#0f1219" }
+
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "", close = "" }
+
+[mode]
+normal_main = { fg = "#050608", bg = "#9ecbff", bold = true }
+normal_alt  = { fg = "#9ecbff", bg = "#0f1219" }
+
+select_main = { bg = "#ff8a9b", bold = true }
+select_alt  = { fg = "#ff8a9b", bg = "#0f1219" }
+
+unset_main = { bg = "#ff8a9b", bold = true }
+unset_alt  = { fg = "#ff8a9b", bg = "#0f1219" }
+
+[indicator]
+parent  = { reversed = true }
+current = { reversed = true }
+preview = { underline = true }
+padding = { open = "", close = "" }
+
+[status]
+overall   = { fg = "#f5f7fa", bg = "#050608" }
+sep_left  = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+
+perm_sep   = { fg = "#566678" }
+perm_type  = { fg = "#8ff0b4" }
+perm_read  = { fg = "#ffd08a" }
+perm_write = { fg = "#ff8a9b" }
+perm_exec  = { fg = "#9ecbff" }
+
+progress_label  = { bold = true }
+progress_normal = { fg = "#8ff0b4", bg = "#0a0c12" }
+progress_error  = { fg = "#ffd08a", bg = "#ff8a9b" }
+
+[which]
+cols            = 3
+mask            = { bg = "#0a0c12" }
+cand            = { fg = "#9ecbff" }
+rest            = { fg = "#566678" }
+desc            = { fg = "#c9b8ff" }
+separator       = "  "
+separator_style = { fg = "#566678" }
+
+[confirm]
+border     = { fg = "#9ecbff" }
+title      = { fg = "#9ecbff" }
+body       = {}
+list       = {}
+btn_yes    = { reversed = true }
+btn_no     = {}
+btn_labels = [ "  [Y]es  ", "  (N)o  " ]
+
+[spot]
+border = { fg = "#9ecbff" }
+title  = { fg = "#9ecbff" }
+
+tbl_col  = { fg = "#9ecbff" }
+tbl_cell = { fg = "#ffd08a", reversed = true }
+
+[notify]
+title_info  = { fg = "#8ff0b4" }
+title_warn  = { fg = "#ffd08a" }
+title_error = { fg = "#ff8a9b" }
+
+icon_info  = ""
+icon_warn  = ""
+icon_error = ""
+
+[pick]
+border   = { fg = "#9ecbff" }
+active   = { fg = "#c9b8ff", bold = true }
+inactive = {}
+
+[input]
+border   = { fg = "#9ecbff" }
+title    = {}
+value    = {}
+selected = { reversed = true }
+
+[cmp]
+border   = { fg = "#9ecbff" }
+active   = { reversed = true }
+inactive = {}
+
+icon_file    = ""
+icon_folder  = ""
+icon_command = ""
+
+[tasks]
+border  = { fg = "#9ecbff" }
+title   = {}
+hovered = { fg = "#c9b8ff", bold = true }
+
+[help]
+on      = { fg = "#9ecbff" }
+run     = { fg = "#c9b8ff" }
+desc    = {}
+hovered = { reversed = true, bold = true }
+footer  = { fg = "#0a0c12", bg = "#f5f7fa" }

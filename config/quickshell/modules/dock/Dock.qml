@@ -1,0 +1,559 @@
+pragma ComponentBehavior: Bound
+
+import Quickshell
+import Quickshell.Io
+import Quickshell.Hyprland
+import Quickshell.Wayland
+import Quickshell.Widgets
+import QtQuick
+import "../../theme" as Palette
+import "../../components/material"
+
+// The bottom notch's resting state: pinned apps plus anything currently
+// running. Hosted by the bottom stage in components/overlay/CenterOverlay.qml,
+// so the slab morphs between this and the launcher / pickers exactly like
+// those morph between each other. Tooltip and context menu are drawn by
+// DockPopups (outside the notch, which clips its content).
+Item {
+    id: root
+
+    visible: false
+
+    property var widgetsService: null
+    property real maxWidth: 4000
+
+    readonly property bool dockOn: widgetsService ? widgetsService.isEnabled("dock") : false
+    readonly property var pinnedIds: widgetsService ? widgetsService.dockPinned : []
+    // Order of running-but-unpinned apps (item keys). Session-only: those apps
+    // aren't persisted anywhere, so neither is where you dragged them.
+    property var unpinnedOrder: []
+    // buildItems() returns brand-new objects every call, so a plain binding
+    // here would hand the Repeater a new array (and thus rebuild every
+    // delegate, killing any MouseArea grab mid-drag) each time a totally
+    // unrelated window updates — e.g. a title change on some other running
+    // app. Unpinned apps are exactly the ones that tend to be doing that
+    // (they're the ones in active use), so their drags were the ones this
+    // actually broke. No inline binding here on purpose — `itemsBinding`
+    // below is the only thing that ever writes `items`, so there's no
+    // ambiguity about which one "wins": while `dragIndex >= 0` it simply
+    // doesn't run, and `items` stays parked at its last value.
+    property var items: []
+
+    Binding {
+        id: itemsBinding
+        target: root
+        property: "items"
+        value: root.buildItems(root.pinnedIds, ToplevelManager.toplevels.values, DesktopEntries.applications.values, root.unpinnedOrder)
+        when: root.dragIndex < 0
+    }
+
+    readonly property bool fullscreenActive: ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.fullscreen : false
+    // Whether the stage should show the dock when nothing else is open.
+    readonly property bool wanted: dockOn && items.length > 0 && !fullscreenActive
+
+    // With windows open on the current workspace the dock steps out of the
+    // way (the overlay reveals it on hover); an empty workspace keeps it up.
+    readonly property bool workspaceBusy: {
+        var ws = Hyprland.focusedWorkspace;
+        return ws && ws.toplevels ? ws.toplevels.values.length > 0 : false;
+    }
+    readonly property bool hovered: dockHover.hovered
+    // Reasons to keep the dock up even though the pointer moved off it.
+    readonly property bool holdOpen: hovered || menuItem !== null || dragIndex >= 0
+
+    // Shared with DockPopups.
+    property Item hoverCell: null
+    property var hoverItem: null
+    property var menuItem: null
+    property Item menuCell: null
+
+    // Icon sizes scale with Settings → Customize (clamped to 0.8–1.3).
+    readonly property real cellSize: Math.round(40 * Palette.Theme.dockIconScale)
+    readonly property real cellSpacing: 3
+
+    implicitWidth: Math.min(maxWidth - 40, row.implicitWidth + 18)
+    implicitHeight: cellSize + 14
+
+    onVisibleChanged: {
+        if (!visible)
+            closeMenu();
+    }
+
+    IpcHandler {
+        target: "dock"
+
+        function toggle(): void {
+            if (root.widgetsService)
+                root.widgetsService.toggle("dock");
+        }
+        function open(): void {
+            if (root.widgetsService && !root.dockOn)
+                root.widgetsService.toggle("dock");
+        }
+        function close(): void {
+            if (root.widgetsService && root.dockOn)
+                root.widgetsService.toggle("dock");
+        }
+    }
+
+    function keyOf(s) {
+        return (s || "").toLowerCase().replace(/\.desktop$/, "");
+    }
+
+    function lookup(id) {
+        return DesktopEntries.byId(id) || DesktopEntries.byId(keyOf(id)) || DesktopEntries.heuristicLookup(keyOf(id)) || null;
+    }
+
+    function keysFor(entry) {
+        var keys = [keyOf(entry.id), keyOf(entry.name)];
+        if (entry.startupClass)
+            keys.push(keyOf(entry.startupClass));
+        return keys;
+    }
+
+    function iconFor(entry, fallback) {
+        var path = entry && entry.icon ? Quickshell.iconPath(entry.icon, true) : "";
+        if (!path && fallback)
+            path = Quickshell.iconPath(fallback, true);
+        return path || Quickshell.iconPath("application-x-executable", true);
+    }
+
+    function makeItem(entry, windows, pinned, fallbackKey) {
+        return {
+            id: entry ? entry.id : "",
+            key: entry ? entry.id : "win:" + fallbackKey,
+            name: entry ? entry.name : fallbackKey,
+            icon: iconFor(entry, fallbackKey),
+            entry: entry,
+            windows: windows,
+            pinned: pinned
+        };
+    }
+
+    function buildItems(pins, toplevels, apps, order) {
+        var groups = {};
+        for (var i = 0; i < toplevels.length; i++) {
+            var k = keyOf(toplevels[i].appId);
+            if (k === "")
+                continue;
+            (groups[k] = groups[k] || []).push(toplevels[i]);
+        }
+
+        var claimed = {};
+        var seen = {};
+        var out = [];
+
+        for (var p = 0; p < pins.length; p++) {
+            var entry = lookup(pins[p]);
+            if (!entry || seen[entry.id])
+                continue;
+            seen[entry.id] = true;
+            var wins = [];
+            var keys = keysFor(entry);
+            for (var j = 0; j < keys.length; j++) {
+                if (groups[keys[j]] && !claimed[keys[j]]) {
+                    claimed[keys[j]] = true;
+                    wins = wins.concat(groups[keys[j]]);
+                }
+            }
+            out.push(makeItem(entry, wins, true, keyOf(pins[p])));
+        }
+
+        var loose = [];
+        for (var key in groups) {
+            if (claimed[key])
+                continue;
+            loose.push(makeItem(DesktopEntries.heuristicLookup(key) || null, groups[key], false, key));
+        }
+        // Dragged order first; anything not dragged yet keeps window order after it.
+        loose.sort((a, b) => {
+            var ia = order.indexOf(a.key), ib = order.indexOf(b.key);
+            return (ia === -1 ? order.length : ia) - (ib === -1 ? order.length : ib);
+        });
+        return out.concat(loose);
+    }
+
+    function launch(item) {
+        if (item && item.entry)
+            item.entry.execute();
+    }
+
+    function activate(item) {
+        var wins = item.windows;
+        if (wins.length === 0) {
+            launch(item);
+            return;
+        }
+        var current = -1;
+        for (var i = 0; i < wins.length; i++) {
+            if (wins[i].activated)
+                current = i;
+        }
+        focusWithoutWarp(wins[(current + 1) % wins.length]);
+    }
+
+    // Toplevel.activate() lets Hyprland warp the pointer to the window's
+    // center (and switch workspace), yanking it off the dock — which then
+    // auto-hides. Focus through Hyprland with warping suppressed for just
+    // this one dispatch, so the pointer stays put and cursor:no_warps keeps
+    // whatever value the config set for everything else.
+    function focusWithoutWarp(toplevel) {
+        var hy = Hyprland.toplevels.values.find(t => t.wayland === toplevel);
+        if (!hy) {
+            toplevel.activate();
+            return;
+        }
+        var addr = hy.address.indexOf("0x") === 0 ? hy.address : "0x" + hy.address;
+        focusProcess.exec(["hyprctl", "eval", "local w = hl.get_config('cursor.no_warps') " + "hl.config({ cursor = { no_warps = true } }) " + "hl.dispatch(hl.dsp.focus({ window = 'address:" + addr + "' })) " + "hl.config({ cursor = { no_warps = w } })"]);
+    }
+
+    Process {
+        id: focusProcess
+    }
+
+    function closeMenu() {
+        menuItem = null;
+        menuCell = null;
+        hoverCell = null;
+        hoverItem = null;
+        menuCloseTimer.stop();
+    }
+
+    // Drag-to-reorder across the whole row. Pinned items always render
+    // first in `items`, then the running-but-unpinned ones, but the drag
+    // itself now spans both groups: dropping a running app's icon into the
+    // pinned block pins it there, and dragging a pinned icon out into the
+    // running block unpins it. (This also happens to be the fix for
+    // "can't drag unpinned apps" when there's only one of them — reordering
+    // a group of one against itself is a no-op by definition, so letting
+    // the drag reach across the boundary gives it somewhere to actually go.)
+    property int dragIndex: -1
+    property int dropIndex: -1
+    property bool dragPinned: true
+    // Off briefly after a reorder so the rebuilt delegates don't replay their
+    // pop-in animation.
+    property bool popIn: true
+
+    readonly property int pinnedCount: {
+        var n = 0;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].pinned)
+                n++;
+        }
+        return n;
+    }
+
+    Timer {
+        id: popInTimer
+        interval: 450
+        onTriggered: root.popIn = true
+    }
+
+    function commitReorder(from, to) {
+        if (from === to || from < 0 || to < 0)
+            return;
+        var moved = items[from];
+        var nowPinned = to < pinnedCount;
+
+        popIn = false;
+        popInTimer.restart();
+
+        if (dragPinned && nowPinned) {
+            // Plain reorder within the pinned block.
+            var ids = [];
+            for (var i = 0; i < pinnedCount; i++)
+                ids.push(items[i].id);
+            var mid = ids.splice(from, 1)[0];
+            ids.splice(to, 0, mid);
+            if (widgetsService) {
+                // Keep pins whose app isn't installed/resolvable right now.
+                var rest = pinnedIds.filter(p => !lookup(p));
+                widgetsService.setPinOrder(ids.concat(rest));
+            }
+            return;
+        }
+
+        if (!dragPinned && !nowPinned) {
+            // Plain reorder within the running-but-unpinned block.
+            var keys = [];
+            for (var u = pinnedCount; u < items.length; u++)
+                keys.push(items[u].key);
+            var movedKey = keys.splice(from - pinnedCount, 1)[0];
+            keys.splice(to - pinnedCount, 0, movedKey);
+            unpinnedOrder = keys;
+            return;
+        }
+
+        if (!dragPinned && nowPinned) {
+            // Dropped a running app into the pinned block: pin it there.
+            if (!moved.id || !widgetsService)
+                return;
+            var ids2 = [];
+            for (var i2 = 0; i2 < pinnedCount; i2++)
+                ids2.push(items[i2].id);
+            ids2.splice(to, 0, moved.id);
+            var rest2 = pinnedIds.filter(p => !lookup(p));
+            widgetsService.setPinOrder(ids2.concat(rest2));
+            return;
+        }
+
+        // dragPinned && !nowPinned: dragged a pinned icon out into the
+        // running block — unpin it. It naturally lands among the running
+        // apps afterwards; where exactly is cosmetic, so no need to also
+        // thread it through unpinnedOrder here.
+        if (widgetsService)
+            widgetsService.togglePin(moved.id);
+    }
+
+    Timer {
+        id: menuCloseTimer
+        interval: 700
+        onTriggered: root.closeMenu()
+    }
+
+    // Lets DockPopups keep the menu open while the pointer is over it.
+    function holdMenu(hold) {
+        if (hold)
+            menuCloseTimer.stop();
+        else if (menuItem)
+            menuCloseTimer.restart();
+    }
+
+    HoverHandler {
+        id: dockHover
+        onHoveredChanged: root.holdMenu(hovered)
+    }
+
+    Row {
+        id: row
+        anchors.centerIn: parent
+        spacing: root.cellSpacing
+
+        Repeater {
+            model: root.items
+
+            delegate: Item {
+                id: cell
+
+                required property var modelData
+                required property int index
+
+                readonly property var wins: modelData.windows
+                readonly property bool running: wins.length > 0
+                readonly property bool dragging: root.dragIndex === index
+                readonly property bool hovered: mouse.containsMouse && root.dragIndex < 0
+                readonly property bool focused: {
+                    for (var i = 0; i < wins.length; i++) {
+                        if (wins[i].activated)
+                            return true;
+                    }
+                    return false;
+                }
+
+                // Slides neighbours aside to open a gap at the drop slot —
+                // across the whole row now, since a drag can cross the
+                // pinned/unpinned boundary (see commitReorder).
+                readonly property real shiftX: {
+                    var step = root.cellSize + root.cellSpacing;
+                    if (root.dragIndex < 0 || dragging)
+                        return 0;
+                    if (root.dragIndex < root.dropIndex && index > root.dragIndex && index <= root.dropIndex)
+                        return -step;
+                    if (root.dragIndex > root.dropIndex && index >= root.dropIndex && index < root.dragIndex)
+                        return step;
+                    return 0;
+                }
+                property real dragX: 0
+
+                width: root.cellSize
+                height: root.cellSize
+                z: dragging ? 10 : 0
+
+                onHoveredChanged: {
+                    if (hovered) {
+                        root.hoverCell = cell;
+                        root.hoverItem = modelData;
+                    } else if (root.hoverCell === cell) {
+                        root.hoverCell = null;
+                        root.hoverItem = null;
+                    }
+                }
+
+                Item {
+                    id: tile
+
+                    width: parent.width
+                    height: parent.height
+                    x: cell.dragging ? cell.dragX : cell.shiftX
+                    scale: root.popIn ? 0.6 : 1
+                    opacity: root.popIn ? 0 : 1
+
+                    Component.onCompleted: {
+                        scale = 1;
+                        opacity = 1;
+                    }
+
+                    Behavior on x {
+                        enabled: !cell.dragging
+                        SpatialMotion {
+                            fast: true
+                        }
+                    }
+                    Behavior on scale {
+                        SpatialMotion {}
+                    }
+                    Behavior on opacity {
+                        EffectMotion {}
+                    }
+
+                    // Two copies of the icon, each rasterized at the exact size
+                    // it's shown at — 28px at rest, 36px zoomed — so both
+                    // states are pixel-crisp (scaling a single raster up or
+                    // down always softens it). They animate together and
+                    // crossfade, so mid-animation looks continuous.
+                    Item {
+                        id: iconBox
+
+                        readonly property real restSize: Math.round(28 * Palette.Theme.dockIconScale)
+                        readonly property real hoverSize: Math.round(36 * Palette.Theme.dockIconScale)
+                        readonly property bool zoomed: cell.hovered && !cell.dragging
+                        // Shared animated size, in pixels.
+                        property real size: cell.dragging ? Math.round(32 * Palette.Theme.dockIconScale) : (zoomed ? hoverSize : restSize)
+                        Behavior on size {
+                            SpatialMotion {
+                                fast: true
+                            }
+                        }
+
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        // Bottom-anchored growth, matching the old icon's
+                        // resting position (centered, nudged up by 2px).
+                        anchors.bottom: parent.verticalCenter
+                        anchors.bottomMargin: 2 - restSize / 2
+                        width: hoverSize
+                        height: hoverSize
+
+                        IconImage {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.bottom: parent.bottom
+                            implicitSize: iconBox.restSize
+                            source: cell.modelData.icon
+                            smooth: true
+                            transformOrigin: Item.Bottom
+                            scale: iconBox.size / iconBox.restSize
+                            opacity: iconBox.zoomed ? 0 : 1
+                            Behavior on opacity {
+                                EffectMotion {}
+                            }
+                        }
+
+                        IconImage {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.bottom: parent.bottom
+                            implicitSize: iconBox.hoverSize
+                            source: cell.modelData.icon
+                            smooth: true
+                            transformOrigin: Item.Bottom
+                            scale: iconBox.size / iconBox.hoverSize
+                            opacity: iconBox.zoomed ? 1 : 0
+                            visible: opacity > 0.01
+                            Behavior on opacity {
+                                EffectMotion {}
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 2
+                        height: 3
+                        radius: 2
+                        width: cell.focused ? 14 : (cell.running ? 5 : 0)
+                        color: cell.focused ? Palette.Theme.accent : Palette.Theme.textMuted
+
+                        Behavior on width {
+                            SpatialMotion {
+                                fast: true
+                            }
+                        }
+                    }
+                }
+
+                // Covers the (stationary) slot rather than the tile, so pointer
+                // coordinates stay stable while the tile itself is being dragged.
+                MouseArea {
+                    id: mouse
+
+                    property real pressX: 0
+                    property bool moved: false
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    cursorShape: cell.dragging ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+
+                    onPressed: event => {
+                        pressX = event.x;
+                        moved = false;
+                    }
+
+                    onPositionChanged: event => {
+                        if (!(pressedButtons & Qt.LeftButton))
+                            return;
+                        var dx = event.x - pressX;
+                        if (!cell.dragging) {
+                            if (Math.abs(dx) < 8)
+                                return;
+                            root.closeMenu();
+                            root.dragPinned = cell.modelData.pinned;
+                            root.dragIndex = cell.index;
+                            root.dropIndex = cell.index;
+                            moved = true;
+                        }
+                        // Full-row range: a drag can cross the pinned/unpinned
+                        // boundary (pinning/unpinning on drop) rather than
+                        // being confined to its own group.
+                        var step = root.cellSize + root.cellSpacing;
+                        var first = 0;
+                        var last = root.items.length - 1;
+                        cell.dragX = Math.max((first - cell.index) * step, Math.min((last - cell.index) * step, dx));
+                        root.dropIndex = Math.max(first, Math.min(last, Math.round(cell.index + cell.dragX / step)));
+                    }
+
+                    onReleased: {
+                        if (cell.dragging) {
+                            var from = root.dragIndex;
+                            var to = root.dropIndex;
+                            cell.dragX = 0;
+                            // Commit first, then release the drag guard, so
+                            // `items` re-binds straight to the final order
+                            // instead of flashing the pre-commit state.
+                            root.commitReorder(from, to);
+                            root.dragIndex = -1;
+                            root.dropIndex = -1;
+                        }
+                    }
+
+                    onClicked: event => {
+                        if (moved)
+                            return;
+                        if (event.button === Qt.RightButton) {
+                            if (root.menuItem === cell.modelData) {
+                                root.closeMenu();
+                            } else {
+                                root.menuItem = cell.modelData;
+                                root.menuCell = cell;
+                            }
+                        } else if (event.button === Qt.MiddleButton) {
+                            root.launch(cell.modelData);
+                        } else {
+                            root.closeMenu();
+                            root.activate(cell.modelData);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

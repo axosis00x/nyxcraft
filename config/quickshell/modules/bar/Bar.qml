@@ -1,0 +1,1008 @@
+import Quickshell
+import Quickshell.Io
+import Quickshell.Services.Mpris
+import QtQuick
+import QtQuick.Layouts
+import Quickshell.Hyprland
+import Quickshell.Widgets
+import "../../components/material"
+import "../../theme" as Palette
+
+PanelWindow {
+    id: bar
+
+    // Horizontal strip along the top edge (default) or a vertical dock along
+    // the left edge — backed by services/BarLayoutService.qml, toggled live
+    // via `quickshell ipc call bar toggle` (bound to SUPER+SHIFT+B).
+    property var barLayout: null
+    readonly property bool vertical: barLayout ? barLayout.vertical : false
+    readonly property bool island: barLayout ? barLayout.island : false
+    // Gap between the screen edge and the center island in island mode;
+    // matches barRow's top margin so it lines up with the other capsules.
+    readonly property real islandGap: 4
+    // Corner radius shared by the horizontal bar's capsules and its center
+    // notch/island, so they all read as one family.
+    readonly property real capsuleRadius: Palette.Theme.radiusSmall
+    // Space the vertical bar reserves at the screen edge. Island mode adds
+    // the gap on top of the strip's width instead of taking it out of the
+    // strip, so the pills keep their room.
+    readonly property real verticalReserve: Palette.Theme.barThickness + (island ? islandGap : 0)
+
+    // Compact style: the separate capsules hide and the center notch becomes
+    // a phone-style status notch (workspaces, time, network, battery).
+    readonly property bool compact: barLayout ? barLayout.compact : false
+
+    anchors {
+        top: true
+        left: true
+        right: !bar.vertical
+        bottom: bar.vertical
+    }
+    margins {
+        top: 0
+        right: 0
+        left: 0
+        bottom: 0
+    }
+    // Only the dimension that isn't pinned down by anchors on both sides
+    // actually applies: implicitHeight governs thickness in horizontal mode,
+    // implicitWidth governs thickness in vertical mode.
+    // Notch mode adds the screen frame's band along the top, so the bar
+    // grows by it and the capsules keep their usual gaps below and beside it.
+    readonly property real frameInset: island ? 0 : Palette.Theme.screenFrameBorder
+    implicitHeight: Palette.Theme.barHeight + frameInset
+    // The vertical window is a little wider than the strip so the concave
+    // fillets can hang off it; only the strip reserves space and takes
+    // input.
+    implicitWidth: verticalReserve + verticalBar.filletSize
+    exclusiveZone: bar.vertical ? verticalReserve : implicitHeight
+    mask: bar.vertical ? verticalMask : null
+
+    property Region verticalMask: Region {
+        x: 0
+        y: 0
+        width: bar.verticalReserve
+        height: bar.height
+    }
+    color: "transparent"
+
+    property string centerMode: "normal"
+    property bool centerActivitySuppressed: false
+    property bool centerActivityVisible: false
+    Timer {
+        id: centerActivityResume
+        interval: 1200
+        onTriggered: bar.centerActivitySuppressed = false
+    }
+
+    // Scroll-cycled content shown in the center notch. "apps" (active
+    // window name) is the default; scrolling the notch steps through
+    // the rest. Compact mode keeps its status view as the first item.
+    property var centerModules: ["apps", "clock", "cava"]
+    property int centerModuleIndex: 0
+    property var compactCenterModules: ["compact", "apps", "clock", "cava"]
+    property int compactCenterModuleIndex: 0
+    // Remembers what was showing before playback auto-switched to cava,
+    // so stopping playback restores it instead of always falling back to apps.
+    property int previousCenterModuleIndex: 0
+    property int previousCompactCenterModuleIndex: 0
+    property bool isRecording: false
+    property var launcher: null
+    property var controlCenter: null
+    property var powerMenu: null
+    property var themePicker: null
+    property var clipboard: null
+    property var mediaPanel: null
+    property var toolMenu: null
+    property var calendarPicker: null
+    property var workspacesService: null
+    property var ensureControlCenter: null
+    property real osdValue: 0
+    property string osdLabel: "0%"
+    property var osd: null
+
+    // Exposed so CenterOverlay can seed its stage from the bar notch's
+    // current collapsed width, creating a seamless expand transition.
+    readonly property real centerCapsuleSlabWidth: centerCapsule ? centerCapsule.slabWidth : 120
+
+    readonly property real minLevel: 0.05
+
+    function scrollCenterModule(deltaY) {
+        if (centerMode !== "normal" || deltaY === 0)
+            return;
+        centerActivitySuppressed = true;
+        centerActivityResume.restart();
+        if (compact) {
+            var compactLength = compactCenterModules.length;
+            if (compactLength < 1)
+                return;
+            var compactDirection = deltaY > 0 ? 1 : -1;
+            compactCenterModuleIndex = (compactCenterModuleIndex + compactDirection + compactLength) % compactLength;
+            return;
+        }
+        var len = centerModules.length;
+        if (len < 1)
+            return;
+        var dir = deltaY > 0 ? 1 : -1;
+        centerModuleIndex = (centerModuleIndex + dir + len) % len;
+    }
+
+    property real currentVolume: 0.5
+    property real currentBrightness: 0.5
+    property bool currentVolumeMuted: false
+    property bool suppressVolumeOsd: false
+    property bool suppressBrightnessOsd: false
+    property string appClass: ""
+    property string appTitle: "Desktop"
+
+    property var player: {
+        var list = Mpris.players.values;
+        if (list.length === 0)
+            return null;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].playbackState === MprisPlaybackState.Playing)
+                return list[i];
+        }
+        return list[0];
+    }
+
+    property bool mediaPlaying: {
+        var list = Mpris.players.values;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].playbackState === MprisPlaybackState.Playing)
+                return true;
+        }
+        return false;
+    }
+
+    // Auto-switch the notch to the cava visualizer when playback starts,
+    // and restore whatever module was showing before once it stops.
+    onMediaPlayingChanged: {
+        if (compact) {
+            var compactCavaIdx = compactCenterModules.indexOf("cava");
+            if (compactCavaIdx < 0)
+                return;
+            if (mediaPlaying) {
+                if (compactCenterModuleIndex !== compactCavaIdx) {
+                    previousCompactCenterModuleIndex = compactCenterModuleIndex;
+                    compactCenterModuleIndex = compactCavaIdx;
+                }
+            } else if (compactCenterModuleIndex === compactCavaIdx) {
+                compactCenterModuleIndex = previousCompactCenterModuleIndex;
+            }
+            return;
+        }
+
+        var cavaIdx = centerModules.indexOf("cava");
+        if (cavaIdx < 0)
+            return;
+        if (mediaPlaying) {
+            if (centerModuleIndex !== cavaIdx) {
+                previousCenterModuleIndex = centerModuleIndex;
+                centerModuleIndex = cavaIdx;
+            }
+        } else if (centerModuleIndex === cavaIdx) {
+            centerModuleIndex = previousCenterModuleIndex;
+        }
+    }
+
+    property int batteryPercent: 0
+    property bool batteryCharging: false
+    property bool batteryAvailable: false
+
+    function checkRecording() {
+        recordingCheck.exec(["pgrep", "-x", "wf-recorder"]);
+    }
+
+    Process {
+        id: recordingCheck
+        onExited: (exitCode) => {
+            bar.isRecording = (exitCode === 0);
+        }
+    }
+
+    Timer {
+        id: recordingTimer
+        interval: 3000
+        running: true
+        repeat: true
+        onTriggered: bar.checkRecording()
+    }
+
+    Component.onCompleted: {
+        readVolume(true);
+        readBrightness(true);
+        readBattery();
+        checkRecording();
+    }
+
+    function showOsd(kind, value, label) {
+        osdValue = Math.max(0, Math.min(1, value));
+        osdLabel = label !== undefined ? label : (Math.round(osdValue * 100) + "%");
+        if (osd)
+            osd.showMeter(kind, osdValue, osdLabel);
+    }
+
+    function showLockOsd(kind, enabled) {
+        if (osd)
+            osd.showLock(kind, enabled);
+    }
+
+    function syncControlCenterVolume() {
+        var panel = getControlCenter(false);
+        if (panel && typeof panel.syncVolumeFromBar === "function")
+            panel.syncVolumeFromBar(currentVolume, currentVolumeMuted);
+    }
+
+    function syncControlCenterBrightness() {
+        var panel = getControlCenter(false);
+        if (panel && typeof panel.syncBrightnessFromBar === "function")
+            panel.syncBrightnessFromBar(currentBrightness);
+    }
+
+    function syncVolumeFromControlCenter(value, muted, show) {
+        currentVolume = Math.max(0, Math.min(1, value));
+        currentVolumeMuted = muted;
+        if (show)
+            showOsd("volume", currentVolume, muted ? "Muted" : undefined);
+    }
+
+    function syncBrightnessFromControlCenter(value, show) {
+        currentBrightness = Math.max(0, Math.min(1, value));
+        if (show)
+            showOsd("brightness", currentBrightness);
+    }
+
+    function parseVolume(data) {
+        var match = data.match(/Volume:\s+([0-9.]+)/);
+        if (!match || match.length < 2)
+            return;
+        var volume = Number(match[1]);
+        if (isNaN(volume))
+            return;
+        currentVolume = volume;
+        currentVolumeMuted = /MUTED/.test(data);
+        syncControlCenterVolume();
+        if (!suppressVolumeOsd)
+            showOsd("volume", volume, currentVolumeMuted ? "Muted" : undefined);
+        suppressVolumeOsd = false;
+    }
+
+    function adjustVolume(delta) {
+        var target = Math.max(minLevel, Math.min(1, currentVolume + delta));
+        volumeAction.exec(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", Math.round(target * 100) + "%"]);
+    }
+
+    function toggleMute() {
+        volumeAction.exec(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
+    }
+
+    function readVolume(silent) {
+        if (silent)
+            suppressVolumeOsd = true;
+        volumeRead.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]);
+    }
+
+    function parseBrightness(data) {
+        var parts = data.trim().split(",");
+        if (parts.length < 5)
+            return;
+        var percent = Number(parts[3].replace("%", ""));
+        if (isNaN(percent))
+            return;
+        currentBrightness = percent / 100;
+        syncControlCenterBrightness();
+        if (!suppressBrightnessOsd)
+            showOsd("brightness", currentBrightness);
+        suppressBrightnessOsd = false;
+    }
+
+    function readBrightness(silent) {
+        if (silent)
+            suppressBrightnessOsd = true;
+        brightnessRead.exec(["brightnessctl", "-m"]);
+    }
+
+    function adjustBrightness(up) {
+        var target = Math.max(minLevel, Math.min(1, currentBrightness + (up ? 0.05 : -0.05)));
+        brightnessSet.exec(["brightnessctl", "set", Math.round(target * 100) + "%"]);
+    }
+
+    function readBattery() {
+        batteryRead.exec(["sh", "-c", "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null || echo ''"]);
+    }
+
+    function readBatteryStatus() {
+        batteryStatusRead.exec(["sh", "-c", "cat /sys/class/power_supply/BAT*/status 2>/dev/null || echo 'None'"]);
+    }
+
+    // Window classes don't always match their icon theme name (e.g. Zed
+    // reports "dev.zed.Zed" but ships an icon literally named "zed") —
+    // resolve through the desktop entry first, falling back to a direct
+    // lookup for the common case where they already match.
+    property var iconCache: ({})
+    function iconForClass(cls) {
+        if (!cls)
+            return "";
+        if (iconCache[cls] !== undefined)
+            return iconCache[cls];
+        var entry = DesktopEntries.heuristicLookup(cls);
+        var res = "";
+        if (entry && entry.icon)
+            res = Quickshell.iconPath(entry.icon, true);
+        else
+            res = Quickshell.iconPath(cls, true);
+        iconCache[cls] = res;
+        return res;
+    }
+
+    function getControlCenter(create) {
+        if (create && typeof ensureControlCenter === "function")
+            return ensureControlCenter();
+        return controlCenter;
+    }
+
+    function toggleControlCenter() {
+        var panel = getControlCenter(true);
+        if (panel)
+            panel.toggleControlCenter();
+    }
+
+    function closeControlCenter(immediate) {
+        var panel = getControlCenter(false);
+        if (panel && panel.visible)
+            panel.closeControlCenter(immediate);
+    }
+
+    function openLauncher() {
+        if (launcher)
+            launcher.openLauncher();
+    }
+
+    function closeLauncher(immediate) {
+        if (launcher && launcher.visible)
+            launcher.closeLauncher(immediate);
+    }
+
+    function toggleLauncher() {
+        if (!launcher)
+            return;
+        if (launcher.visible && !launcher.closing)
+            launcher.closeLauncher();
+        else
+            launcher.openLauncher();
+    }
+
+    IpcHandler {
+        target: "osd"
+
+        function volume(value: real): void {
+            bar.syncVolumeFromControlCenter(value > 1 ? value / 100 : value, bar.currentVolumeMuted, true);
+            bar.syncControlCenterVolume();
+        }
+        function brightness(value: real): void {
+            bar.syncBrightnessFromControlCenter(value > 1 ? value / 100 : value, true);
+            bar.syncControlCenterBrightness();
+        }
+        function lockState(kind: string, enabled: string): void {
+            // The Hyprland keybind reports the state before the lock key is
+            // applied, so invert it to show the resulting keyboard state.
+            bar.showLockOsd(kind, !(enabled === "1" || String(enabled).toLowerCase() === "true"));
+        }
+        function volumeUp(): void {
+            bar.adjustVolume(0.05);
+        }
+        function volumeDown(): void {
+            bar.adjustVolume(-0.05);
+        }
+        function mute(): void {
+            bar.toggleMute();
+        }
+        function brightnessUp(): void {
+            bar.adjustBrightness(true);
+        }
+        function brightnessDown(): void {
+            bar.adjustBrightness(false);
+        }
+    }
+
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            if (event.name !== "activewindow")
+                return;
+            var idx = event.data.indexOf(",");
+            if (idx <= 0) {
+                bar.appClass = "";
+                bar.appTitle = "Desktop";
+            } else {
+                bar.appClass = event.data.substring(0, idx);
+                bar.appTitle = event.data.substring(idx + 1);
+            }
+        }
+    }
+
+    Process {
+        id: brightnessSet
+        command: ["brightnessctl", "set", "+5%"]
+        onExited: bar.readBrightness()
+    }
+
+    Process {
+        id: volumeAction
+        onExited: bar.readVolume()
+    }
+
+    Process {
+        id: volumeRead
+        command: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => bar.parseVolume(data)
+        }
+    }
+
+    Process {
+        id: brightnessRead
+        command: ["brightnessctl", "-m"]
+
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => bar.parseBrightness(data)
+        }
+    }
+
+    Process {
+        id: batteryRead
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT*/capacity 2>/dev/null || echo ''"]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => {
+                var pct = parseInt(data.trim());
+                if (!isNaN(pct)) {
+                    bar.batteryAvailable = true;
+                    bar.batteryPercent = pct;
+                }
+            }
+        }
+        onExited: {
+            if (bar.batteryAvailable)
+                bar.readBatteryStatus();
+        }
+    }
+
+    Process {
+        id: batteryStatusRead
+        command: ["sh", "-c", "cat /sys/class/power_supply/BAT*/status 2>/dev/null || echo 'None'"]
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => bar.batteryCharging = data.trim() === "Charging"
+        }
+    }
+
+    // Fallback poll — instant updates now come from powerSupplyWatcher below,
+    // this just guards against missed/coalesced udev events.
+    Timer {
+        id: batteryTimer
+        interval: 60000
+        running: true
+        repeat: true
+        onTriggered: bar.readBattery()
+    }
+
+    // Instant refresh: fires the moment AC is plugged/unplugged or the
+    // battery status changes, instead of waiting on the poll interval.
+    // Requires `udev` / `systemd` (udevadm) — present by default on NixOS.
+    Process {
+        id: powerSupplyWatcher
+        command: ["udevadm", "monitor", "--udev", "--subsystem-match=power_supply"]
+        running: true
+        stdout: SplitParser {
+            splitMarker: "\n"
+            onRead: data => bar.readBattery()
+        }
+    }
+
+    Item {
+        id: barRow
+        visible: !bar.vertical && opacity > 0.01
+        opacity: bar.compact ? 0 : 1
+        Behavior on opacity {
+            EffectMotion {}
+        }
+        anchors {
+            top: parent.top
+            left: parent.left
+            right: parent.right
+            topMargin: 4 + bar.frameInset
+            leftMargin: bar.frameInset
+            rightMargin: bar.frameInset
+        }
+        height: 30
+
+        LauncherIsland {
+            id: launcherIsland
+            radius: bar.capsuleRadius
+            anchors.left: parent.left
+            anchors.leftMargin: 4
+            anchors.verticalCenter: parent.verticalCenter
+            bar: bar
+        }
+
+        BarSection {
+            id: workspacesCapsule
+            radius: bar.capsuleRadius
+            anchors.left: launcherIsland.right
+            anchors.leftMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: Math.max(workspaces.implicitWidth + 24, 185)
+
+            MouseArea {
+                // The dots no longer have their own click handlers, so this
+                // single MouseArea catches every click in the capsule —
+                // circles, pills, and empty space alike — and opens the
+                // full overview.
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (bar.workspacesService)
+                        bar.workspacesService.step(1);
+                }
+            }
+
+            Workspaces {
+                id: workspaces
+                anchors.centerIn: parent
+                service: bar.workspacesService
+            }
+        }
+
+        BarSection {
+            id: weatherCapsule
+            radius: bar.capsuleRadius
+            anchors.left: workspacesCapsule.right
+            anchors.leftMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: weather.implicitWidth + 24
+            visible: !bar.vertical && weather.available
+        }
+
+        BarSection {
+            id: batteryCapsule
+            radius: bar.capsuleRadius
+            anchors.right: rightCapsule.left
+            anchors.rightMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: batteryContent.implicitWidth + 24
+            visible: bar.batteryAvailable
+
+            Battery {
+                id: batteryContent
+                anchors.centerIn: parent
+                bar: bar
+            }
+        }
+
+        BarSection {
+            id: rightCapsule
+            radius: bar.capsuleRadius
+            anchors.right: powerCapsule.left
+            anchors.rightMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            // The settings button sits flush in the capsule's end with an
+            // even inset on its three outer sides.
+            readonly property real buttonInset: 3
+            implicitWidth: rightRow.implicitWidth + buttonInset * 2
+
+            RowLayout {
+                id: rightRow
+                anchors.left: parent.left
+                anchors.leftMargin: rightCapsule.buttonInset
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 4
+
+                Tray {
+                    parentWindow: bar
+                    cellSize: rightCapsule.height - rightCapsule.buttonInset * 2
+                    cellRadius: rightCapsule.radius - rightCapsule.buttonInset
+                }
+
+                Divider {
+                    vertical: true
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                IconButton {
+                    icon: "\ue8b8"
+                    implicitWidth: rightCapsule.height - rightCapsule.buttonInset * 2
+                    implicitHeight: implicitWidth
+                    stateRadius: rightCapsule.radius - rightCapsule.buttonInset
+                    Layout.alignment: Qt.AlignVCenter
+                    onClicked: {
+                        Quickshell.execDetached(["quickshell", "ipc", "call", "settings", "toggle"]);
+                    }
+                }
+            }
+        }
+
+        BarSection {
+            id: powerCapsule
+            anchors.right: parent.right
+            anchors.rightMargin: 4
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: 30
+            implicitHeight: 30
+            radius: bar.capsuleRadius
+            Text {
+                anchors.centerIn: parent
+                text: "\ue8ac"
+                color: Palette.Theme.textPrimary
+                font.family: Palette.Theme.fontIcons
+                font.weight: Palette.Theme.iconWeight
+                font.pixelSize: Palette.Theme.iconSize
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (bar.powerMenu && typeof bar.powerMenu.togglePowerMenu === "function")
+                        bar.powerMenu.togglePowerMenu();
+                }
+            }
+        }
+    }
+
+    // Left-edge bar (see VerticalBar.qml). Popups grow from CenterOverlay's
+    // shared stage instead of a notch here (top-anchored for control
+    // center/power/tools, bottom-anchored for everything else — see
+    // services/BarLayoutService.qml).
+    VerticalBar {
+        id: verticalBar
+        visible: bar.vertical
+        anchors.fill: parent
+        bar: bar
+        thickness: Palette.Theme.barThickness
+    }
+
+    Weather {
+        id: weather
+        parent: weatherCapsule
+        vertical: false
+        anchors.centerIn: parent
+    }
+
+    Notch {
+        id: centerCapsule
+        visible: !bar.vertical
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
+        island: bar.island
+        islandGap: bar.islandGap
+        slabWidth: centerContentWidth + 24
+        slabRadius: bar.capsuleRadius
+        clipContent: false
+
+        // Notch mode: grow out of the screen frame (ScreenFrame.qml) like
+        // the panels do, in its color, from its inner edge, curving into it.
+        anchors.topMargin: bar.island ? 0 : Palette.Theme.screenFrameBorder
+        wingSize: bar.island ? 9 : Palette.Theme.screenFrameRadius
+        color: Palette.Theme.bg
+        tintOpacity: bar.island ? Palette.Theme.surfaceTintOpacity : 0
+
+        Behavior on color {
+            ColorMotion {}
+        }
+
+        readonly property string activeCenterModule: bar.compact ? bar.compactCenterModules[bar.compactCenterModuleIndex] : bar.centerModules[bar.centerModuleIndex]
+
+        // "Desktop" and the clock share this width so the notch doesn't resize
+        // when cycling between them — cava sizes itself independently, and
+        // a real app title (which varies) grows/shrinks the notch too.
+        readonly property real idleContentWidth: Math.max(desktopContent.implicitWidth, clockContent.implicitWidth)
+
+        readonly property real centerContentWidth: {
+            switch (centerCapsule.activeCenterModule) {
+            case "compact":
+                return compactContent.implicitWidth;
+            case "cava":
+                return cavaContent.implicitWidth;
+            case "clock":
+                return centerCapsule.idleContentWidth;
+            default:
+                return bar.appClass !== "" ? appsContent.implicitWidth : centerCapsule.idleContentWidth;
+            }
+        }
+
+        // Sits flush against the screen edge (no top gap) while the rest of the
+        // bar keeps its small top margin — so matching barRow's *height* would
+        // leave the notch's bottom edge sitting above barRow's (whose top
+        // margin eats into the same window height). Matching the window's
+        // height instead lines up both bottom edges flush with each other,
+        // giving the notch and barRow an equal (zero) bottom gap even though
+        // their top offsets differ. Grows down out of the edge with a gentle
+        // overshoot the first time the shell starts; animating the height
+        // rather than sliding the whole notch down keeps the wings welded to
+        // the edge for the entire drop.
+        // In island mode the island is inset like the other bar capsules
+        // (barRow's 4px top margin), so it's that much shorter.
+        readonly property real restHeight: bar.height - (bar.island ? bar.islandGap : Palette.Theme.screenFrameBorder)
+        slabHeight: 0
+
+        Behavior on slabHeight {
+            enabled: !dropInAnim.running
+            SpatialMotion {}
+        }
+
+        Component.onCompleted: dropInAnim.start()
+
+        NumberAnimation {
+            id: dropInAnim
+            target: centerCapsule
+            property: "slabHeight"
+            to: centerCapsule.restHeight
+            duration: 480
+            easing.type: Easing.OutBack
+            // Kept modest so the bounce peak stays inside the window's height.
+            easing.overshoot: 1.0
+            // From here on, follow the resting height (e.g. when island mode
+            // changes) — including a change that landed mid-drop.
+            onStopped: centerCapsule.slabHeight = Qt.binding(() => centerCapsule.restHeight)
+        }
+
+        Behavior on slabWidth {
+            SpatialMotion {
+                fast: true
+            }
+        }
+
+        Behavior on opacity {
+            EffectMotion {}
+        }
+
+        RowLayout {
+            id: appsContent
+            anchors.centerIn: parent
+            spacing: 7
+            // Only mounted once there's an actual app — no hidden icon
+            // sitting in the layout reserving space for the desktop case.
+            visible: centerCapsule.activeCenterModule === "apps" && bar.appClass !== "" && !bar.centerActivityVisible
+            opacity: bar.centerMode === "normal" && centerCapsule.activeCenterModule === "apps" && bar.appClass !== "" && !bar.centerActivityVisible ? 1 : 0
+            Behavior on opacity {
+                EffectMotion {}
+            }
+
+            IconImage {
+                implicitSize: 14
+                source: bar.iconForClass(bar.appClass)
+                visible: source !== ""
+                smooth: true
+                mipmap: true
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Text {
+                text: bar.appTitle
+                color: Palette.Theme.textPrimary
+                font.family: Palette.Theme.fontMono
+                font.pixelSize: Palette.Theme.fontSizeSmall
+                font.weight: Font.DemiBold
+                elide: Text.ElideRight
+                Layout.maximumWidth: 200
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        // Nothing focused: a desktop icon and "Desktop", as on the vertical
+        // bar, laid out like the app row above so the two swap cleanly.
+        RowLayout {
+            id: desktopContent
+            anchors.centerIn: parent
+            spacing: 7
+            visible: centerCapsule.activeCenterModule === "apps" && bar.appClass === "" && !bar.centerActivityVisible
+            opacity: bar.centerMode === "normal" && centerCapsule.activeCenterModule === "apps" && bar.appClass === "" && !bar.centerActivityVisible ? 1 : 0
+            Behavior on opacity {
+                EffectMotion {}
+            }
+
+            Text {
+                text: "desktop_windows"
+                color: Palette.Theme.textMuted
+                font.family: Palette.Theme.fontIcons
+                font.weight: Palette.Theme.iconWeight
+                font.pixelSize: 14
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Text {
+                text: "Desktop"
+                color: Palette.Theme.textPrimary
+                font.family: Palette.Theme.fontMono
+                font.pixelSize: Palette.Theme.fontSizeSmall
+                font.weight: Font.DemiBold
+                Layout.alignment: Qt.AlignVCenter
+            }
+        }
+
+        Item {
+            id: cavaContent
+            anchors.centerIn: parent
+            implicitWidth: bar.mediaPlaying ? cavaVisualizer.implicitWidth : silenceText.implicitWidth
+            implicitHeight: Math.max(cavaVisualizer.implicitHeight, silenceText.implicitHeight)
+            visible: centerCapsule.activeCenterModule === "cava" && !bar.centerActivityVisible
+            opacity: bar.centerMode === "normal" && centerCapsule.activeCenterModule === "cava" && !bar.centerActivityVisible ? 1 : 0
+            Behavior on opacity {
+                EffectMotion {}
+            }
+
+            // The visualizer only ever runs while something is actually
+            // playing — with nothing to visualize it just sat there
+            // painted on one stale frame, which read as frozen/broken.
+            Cava {
+                id: cavaVisualizer
+                anchors.centerIn: parent
+                // The horizontal notch (and this cava instance inside it)
+                // stays instantiated but hidden when the bar is vertical —
+                // don't let it keep a cava process running behind the
+                // vertical bar's own visualizer.
+                active: bar.mediaPlaying && cavaContent.visible && !bar.vertical
+                visible: bar.mediaPlaying
+                opacity: bar.mediaPlaying ? 1 : 0
+                Behavior on opacity {
+                    EffectMotion {}
+                }
+            }
+
+            Text {
+                id: silenceText
+                anchors.centerIn: parent
+                text: "Enjoy Silence"
+                visible: !bar.mediaPlaying
+                opacity: !bar.mediaPlaying ? 1 : 0
+                color: Palette.Theme.textMuted
+                font.family: Palette.Theme.fontMono
+                font.pixelSize: Palette.Theme.fontSizeSmall
+                Behavior on opacity {
+                    EffectMotion {}
+                }
+            }
+        }
+        // Compact style: a phone-style status notch.
+        RowLayout {
+            id: compactContent
+            anchors.centerIn: parent
+            spacing: 12
+            visible: centerCapsule.activeCenterModule === "compact" && !bar.centerActivityVisible
+            opacity: visible ? 1 : 0
+            Behavior on opacity {
+                EffectMotion {}
+            }
+
+            Workspaces {
+                id: compactWorkspaces
+                Layout.alignment: Qt.AlignVCenter
+                service: bar.workspacesService
+                trimToUsed: true
+                dotSize: 7
+                activeLength: 18
+                gap: 4
+            }
+
+            Text {
+                Layout.alignment: Qt.AlignVCenter
+                text: Qt.formatDateTime(compactClock.date, "hh:mm")
+                color: Palette.Theme.textPrimary
+                font.family: Palette.Theme.fontSans
+                font.pixelSize: Palette.Theme.fontSizeBody
+                font.weight: Font.DemiBold
+
+                SystemClock {
+                    id: compactClock
+                    precision: SystemClock.Minutes
+                }
+            }
+
+            NetworkIcon {
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            BatteryPill {
+                Layout.alignment: Qt.AlignVCenter
+                bar: bar
+            }
+        }
+
+
+        RowLayout {
+            id: clockContent
+            anchors.centerIn: parent
+            spacing: 8
+            visible: centerCapsule.activeCenterModule === "clock" && !bar.centerActivityVisible
+            opacity: bar.centerMode === "normal" && centerCapsule.activeCenterModule === "clock" && !bar.centerActivityVisible ? 1 : 0
+            Behavior on opacity {
+                EffectMotion {}
+            }
+
+            Clock {}
+        }
+
+        MouseArea {
+            id: centerScrollArea
+            anchors.fill: parent
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            cursorShape: Qt.PointingHandCursor
+
+            // A trackpad swipe fires many small wheel deltas in quick
+            // succession; without this gate each one would yank the module
+            // index and restart the crossfade/width animations mid-flight,
+            // reading as stutter. One swipe now advances a single step.
+            property bool wheelLocked: false
+
+            Timer {
+                id: wheelUnlock
+                interval: 260
+                onTriggered: centerScrollArea.wheelLocked = false
+            }
+
+            onWheel: wheel => {
+                wheel.accepted = true;
+                if (wheelLocked)
+                    return;
+                bar.scrollCenterModule(wheel.angleDelta.y);
+                wheelLocked = true;
+                wheelUnlock.restart();
+            }
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    bar.closeControlCenter();
+                    if (bar.mediaPanel)
+                        bar.mediaPanel.toggleMediaPanel();
+                    return;
+                }
+
+                // In the compact status view, clicks on the workspace dots
+                // open the overview. Other compact center modules behave like
+                // the normal notch.
+                if (bar.compact && centerCapsule.activeCenterModule === "compact") {
+                    var p = mapToItem(compactWorkspaces, mouse.x, mouse.y);
+                    if (p.x >= -6 && p.x <= compactWorkspaces.width + 6) {
+                        compactWorkspaces.openAtPosition(p.x, p.y);
+                        return;
+                    }
+                }
+
+                bar.toggleControlCenter();
+            }
+        }
+
+        Connections {
+            target: bar.controlCenter
+            enabled: bar.controlCenter !== null
+            function onAboutToOpen() { bar.centerMode = "controlCenter"; }
+            function onAboutToClose() { bar.centerMode = "normal"; }
+        }
+
+        Connections {
+            target: bar.powerMenu
+            enabled: bar.powerMenu !== null
+            function onAboutToOpen() { bar.centerMode = "powerMenu"; }
+            function onAboutToClose() { bar.centerMode = "normal"; }
+        }
+
+        Connections {
+            target: bar.mediaPanel
+            enabled: bar.mediaPanel !== null
+            function onAboutToOpen() { bar.centerMode = "mediaPanel"; }
+            function onAboutToClose() { bar.centerMode = "normal"; }
+        }
+
+        Connections {
+            target: bar.toolMenu
+            enabled: bar.toolMenu !== null
+            function onAboutToOpen() { bar.centerMode = "toolMenu"; }
+            function onAboutToClose() { bar.centerMode = "normal"; }
+        }
+    }
+
+}

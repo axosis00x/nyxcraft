@@ -1,0 +1,100 @@
+import Quickshell
+import Quickshell.Io
+import QtQuick
+
+// Persists which edge the bar lives on (top horizontal strip vs. left
+// vertical dock) so it survives shell reloads/restarts. Plain data + a
+// setter — the actual picker UI (modules/barlayout/BarLayoutPicker.qml,
+// opened via IPC target "barlayout") is what decides when to call setVertical.
+Item {
+    id: root
+    visible: false
+
+    readonly property bool vertical: state.vertical
+    // Notch mode (panels hang from the screen edge) vs island mode (they
+    // float off it as rounded islands) — see components/material/Notch.qml.
+    readonly property bool island: state.island
+    // Compact: the horizontal bar's modules gather around the center notch
+    // instead of spreading to the screen edges. Only applies when horizontal.
+    readonly property bool compact: !state.vertical && state.compact
+    // "top" | "left" | "compact" — the three bar styles the picker offers.
+    readonly property string style: state.vertical ? "left" : (state.compact ? "compact" : "top")
+    // Lets consumers tell a genuine layout change from the transient
+    // default-then-loaded resolution on startup/reload: shell.qml defers
+    // constructing Bar until this is true (its anchors bind to `vertical`
+    // directly, with nothing to animate away a wrong-then-right flip), and
+    // CenterOverlay's idle notch (seeded from `vertical`) uses it to skip
+    // animating that same transient.
+    // A missing state file (first run, or a cleared ~/.cache) counts as
+    // loaded with the defaults — otherwise the bar would wait forever.
+    property bool missing: false
+    readonly property bool loaded: stateFile.loaded || missing
+
+    function setStyle(value) {
+        if (value !== "top" && value !== "left" && value !== "compact")
+            return;
+        state.compact = value === "compact";
+        if (state.vertical !== (value === "left"))
+            setVertical(value === "left");
+        else
+            stateFile.writeAdapter();
+    }
+
+    function setIsland(value) {
+        state.island = value;
+        stateFile.writeAdapter();
+    }
+
+    function setVertical(value) {
+        state.vertical = value;
+        stateFile.writeAdapter();
+        // Keeps Hyprland's workspace-slide direction (vertAni.lua vs
+        // horizAni.lua) in sync with the bar's edge.
+        applyOrientation.exec([Quickshell.env("HOME") + "/.config/quickshell/scripts/bar-style.sh", value ? "vertical" : "horizontal"]);
+    }
+
+    Process {
+        id: applyOrientation
+    }
+
+    IpcHandler {
+        target: "bar"
+        function toggle(): void {
+            root.setVertical(!root.vertical);
+        }
+        function setVertical(value: bool): void {
+            root.setVertical(value);
+        }
+        function setIsland(value: bool): void {
+            root.setIsland(value);
+        }
+        function setStyle(value: string): void {
+            root.setStyle(value);
+        }
+    }
+
+    // blockLoading forces the initial read to happen synchronously, so the
+    // bar renders with its real saved edge immediately — without it, the
+    // bar briefly renders vertical (the declared default below) then snaps
+    // to the loaded value a moment later, which is the "wobble" on reload.
+    FileView {
+        id: stateFile
+        path: Quickshell.cachePath("bar-layout.json")
+        watchChanges: false
+        blockLoading: true
+        onLoadFailed: error => {
+            if (error === FileViewError.FileNotFound) {
+                root.missing = true;
+                writeAdapter();
+            }
+        }
+
+        JsonAdapter {
+            id: state
+            // The default before this became a live-toggleable, persisted setting.
+            property bool vertical: true
+            property bool island: false
+            property bool compact: false
+        }
+    }
+}
