@@ -35,7 +35,7 @@ in
         hyprshade
         zenity
         matugen
-        rembg
+        python313Packages.rembg
       ])
       ++ [
         (pkgs.callPackage ./hyprglass.nix { })
