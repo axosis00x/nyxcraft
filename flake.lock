@@ -92,6 +92,22 @@
         "type": "github"
       }
     },
+    "flake-compat": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1761588595,
+        "narHash": "sha256-XKUZz9zewJNUj46b4AJdiRZJAvSZ0Dqj2BNfXvFlJC4=",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "f387cd2afec9419c8ee37694406ca490c3f34ee5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -165,6 +181,22 @@
       "original": {
         "owner": "BlueManCZ",
         "repo": "hyprmod",
+        "type": "github"
+      }
+    },
+    "libnbtplusplus": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1650031308,
+        "narHash": "sha256-TvVOjkUobYJD9itQYueELJX3wmecvEdCbJ0FinW2mL4=",
+        "owner": "PolyMC",
+        "repo": "libnbtplusplus",
+        "rev": "2203af7eeb48c45398139b583615134efd8d407f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "PolyMC",
+        "repo": "libnbtplusplus",
         "type": "github"
       }
     },
@@ -271,6 +303,29 @@
         "url": "https://devimages-cdn.apple.com/design/resources/download/NY.dmg"
       }
     },
+    "polymc": {
+      "inputs": {
+        "flake-compat": "flake-compat",
+        "libnbtplusplus": "libnbtplusplus",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "tomlplusplus": "tomlplusplus"
+      },
+      "locked": {
+        "lastModified": 1793240940,
+        "narHash": "sha256-ks1YBtSt0JfMQnTpD90c0LvsWZFK3Iry4Ah49HvkCN8=",
+        "owner": "PolyMC",
+        "repo": "PolyMC",
+        "rev": "5d587c5a6f7d0e5d12d5b6fdc69eb30c0dd4a492",
+        "type": "github"
+      },
+      "original": {
+        "owner": "PolyMC",
+        "repo": "PolyMC",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "apple-fonts": "apple-fonts",
@@ -280,6 +335,7 @@
         "momoi-say": "momoi-say",
         "moomer": "moomer",
         "nixpkgs": "nixpkgs_2",
+        "polymc": "polymc",
         "silentSDDM": "silentSDDM",
         "spicetify-nix": "spicetify-nix",
         "zen-browser": "zen-browser"
@@ -470,6 +526,22 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "tomlplusplus": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1756542235,
+        "narHash": "sha256-qcc8yXND9htFqjQADU60+xoJZ0acoQwcs7tIK1LgAOg=",
+        "owner": "marzer",
+        "repo": "tomlplusplus",
+        "rev": "e7aaccca3fa3dbde9818ab8313250f3da4976e37",
+        "type": "github"
+      },
+      "original": {
+        "owner": "marzer",
+        "repo": "tomlplusplus",
         "type": "github"
       }
     },

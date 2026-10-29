@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -12,9 +13,11 @@ in
     enable = lib.mkEnableOption "gaming tools";
   };
   config = lib.mkIf cfg.enable {
-    home.packages = with pkgs; [
-      steam
-      prismlauncher
-    ];
+    home.packages =
+      with pkgs;
+      [
+        steam
+      ]
+      ++ [ inputs.polymc.packages.${pkgs.system}.default ];
   };
 }

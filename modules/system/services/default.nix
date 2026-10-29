@@ -16,8 +16,6 @@ in
   config = lib.mkIf cfg.enable {
     hardware.bluetooth.enable = true;
     services.blueman.enable = true;
-    services.flatpak.enable = true;
-
     services.power-profiles-daemon.enable = true;
 
     # Audio services used by the desktop shell.

@@ -48,6 +48,7 @@ in
       shfmt
       stylua
       taplo
+      nixfmt
     ];
   };
 }

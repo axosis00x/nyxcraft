@@ -38,6 +38,10 @@
       url = "github:axosis00x/moomer";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    polymc = {
+      url = "github:PolyMC/PolyMC";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
   };
   outputs =
