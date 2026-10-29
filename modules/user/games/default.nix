@@ -16,8 +16,11 @@ in
     home.packages =
       with pkgs;
       [
-        steam
+        # steam
+        # prismlauncher
       ]
-      ++ [ inputs.polymc.packages.${pkgs.system}.default ];
+      ++ [
+        inputs.polymc.packages.${pkgs.stdenv.hostPlatform.system}.default
+      ];
   };
 }
