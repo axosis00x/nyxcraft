@@ -20,7 +20,9 @@ in
         # prismlauncher
       ]
       ++ [
-        inputs.polymc.packages.${pkgs.stdenv.hostPlatform.system}.default
+        (inputs.polymc.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+          gamemodeSupport = pkgs.stdenv.hostPlatform.isLinux;
+        })
       ];
   };
 }

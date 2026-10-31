@@ -46,7 +46,7 @@ in
         todocx = "libreoffice --headless --convert-to docx 2>/dev/null";
         ls = "eza --icons";
         cat = "bat --paging=never --style=plain";
-        man = ''MANPAGER="sh -c 'col -bx | bat --language=man --paging=always'" command man'';
+        man = ''MANPAGER="bat -plman" command man'';
         ll = "eza -lh --icons --git";
         la = "eza -lah --color=always --group-directories-first";
         lah = "eza -lah --icons --group-directories-first";
