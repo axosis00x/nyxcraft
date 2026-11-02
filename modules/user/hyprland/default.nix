@@ -38,7 +38,6 @@ in
         python313Packages.rembg
       ])
       ++ [
-        (pkgs.callPackage ./hyprglass.nix { })
         inputs.hyprmod.packages.${pkgs.stdenv.hostPlatform.system}.default
       ];
     xdg.portal = {
