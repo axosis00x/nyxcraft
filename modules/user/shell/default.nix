@@ -33,6 +33,7 @@ in
       eza
       dust
       bat
+      libinput
       tree
       tmux
       ripgrep
