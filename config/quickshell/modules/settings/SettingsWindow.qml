@@ -172,6 +172,7 @@ FloatingWindow {
         case "clock":
         case "weather":
         case "cava":
+        case "bongo":
             return widgetsService ? widgetsService.isEnabled(key) : false;
         case "island":
             return barLayout ? barLayout.island : false;
@@ -349,6 +350,7 @@ FloatingWindow {
         case "clock":
         case "weather":
         case "cava":
+        case "bongo":
             if (widgetsService)
                 widgetsService.toggle(key);
             break;
@@ -532,7 +534,7 @@ FloatingWindow {
         case "dock":
             return (barLayout ? "Bar: " + barLayout.style + (flag("island") ? ", island" : "") + "  ·  " : "") + "Control center " + levelText("ccwidth") + "  ·  " + (flag("dock") ? (flag("dockautohide") ? "Dock hides over windows" : "Dock always shown") : "Dock hidden");
         case "widgets":
-            return ["clock", "weather", "cava"].filter(k => flag(k)).length + " of 3 widgets on";
+            return ["clock", "weather", "cava", "bongo"].filter(k => flag(k)).length + " of 4 widgets on";
         case "net":
             return "Wi-Fi " + (flag("wifi") ? "on" : "off") + "  ·  Bluetooth " + (flag("bluetooth") ? "on" : "off");
         case "display":
@@ -876,6 +878,7 @@ FloatingWindow {
                         { kind: "switch", key: "weather", icon: "partly_cloudy_day", title: "Weather widget" },
                         { kind: "slider", key: "weathersize", icon: "partly_cloudy_day", title: "Weather size" },
                         { kind: "switch", key: "cava", icon: "graphic_eq", title: "Audio wave widget", subtitle: "Visualizes whatever is playing" },
+                        { kind: "switch", key: "bongo", icon: "pets", title: "Bongo Cat in bar", subtitle: "Show the animated cat before the battery" },
                         { kind: "slider", key: "cavasize", icon: "graphic_eq", title: "Audio wave size" }
                     ]
                 }

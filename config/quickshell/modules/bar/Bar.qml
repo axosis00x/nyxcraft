@@ -15,6 +15,7 @@ PanelWindow {
     // the left edge — backed by services/BarLayoutService.qml, toggled live
     // via `quickshell ipc call bar toggle` (bound to SUPER+SHIFT+B).
     property var barLayout: null
+    property var widgetService: null
     readonly property bool vertical: barLayout ? barLayout.vertical : false
     readonly property bool island: barLayout ? barLayout.island : false
     // Gap between the screen edge and the center island in island mode;
@@ -571,16 +572,38 @@ PanelWindow {
         BarSection {
             id: batteryCapsule
             radius: bar.capsuleRadius
-            anchors.right: rightCapsule.left
-            anchors.rightMargin: 6
             anchors.verticalCenter: parent.verticalCenter
             implicitWidth: batteryContent.implicitWidth + 24
             visible: bar.batteryAvailable
+
+            anchors.right: rightCapsule.left
+            anchors.rightMargin: 6
 
             Battery {
                 id: batteryContent
                 anchors.centerIn: parent
                 bar: bar
+            }
+        }
+
+        BarSection {
+            id: bongoCapsule
+            radius: bar.capsuleRadius
+            // Tuck in next to the battery when it's shown, otherwise sit
+            // directly before the right-hand capsule instead of leaving the
+            // hidden battery's width as a gap.
+            anchors.right: bar.batteryAvailable ? batteryCapsule.left : rightCapsule.left
+            anchors.rightMargin: 6
+            anchors.verticalCenter: parent.verticalCenter
+            implicitWidth: bongoCat.implicitWidth + 20
+            visible: !bar.vertical && bar.widgetService && bar.widgetService.isEnabled("bongo")
+
+            BongoCat {
+                id: bongoCat
+                anchors.centerIn: parent
+                // Don't keep a libinput listener alive while the bar is
+                // compact (barRow faded out) or the widget is hidden.
+                enabled: bongoCapsule.visible && !bar.compact
             }
         }
 

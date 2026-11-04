@@ -92,7 +92,7 @@ Item {
         JsonAdapter {
             id: state
             // The default before this became a live-toggleable, persisted setting.
-            property bool vertical: true
+            property bool vertical: false
             property bool island: false
             property bool compact: false
         }

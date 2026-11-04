@@ -15,7 +15,8 @@ Item {
         { id: "clock", label: "Clock Widget", icon: "" },
         { id: "weather", label: "Weather Widget", icon: "" },
         { id: "cava", label: "Audio Wave Widget", icon: "graphic_eq" },
-        { id: "dock", label: "Dock", icon: "" }
+        { id: "dock", label: "Dock", icon: "" },
+        { id: "bongo", label: "Bongo Cat", icon: "pets" }
     ]
 
     // Desktop-file ids pinned to the dock (widgets/Dock.qml), in order.
@@ -49,6 +50,10 @@ Item {
             return state.cavaEnabled;
         case "dock":
             return state.dockEnabled;
+        case "bongo":
+            // Existing state files predate this widget. Treat an absent
+            // value as enabled so it appears after the shell reloads.
+            return state.bongoEnabled !== false;
         default:
             return false;
         }
@@ -67,6 +72,11 @@ Item {
             break;
         case "dock":
             state.dockEnabled = !state.dockEnabled;
+            break;
+        case "bongo":
+            // isEnabled() treats a missing value as on, so toggle from that
+            // rather than from the raw (possibly undefined) property.
+            state.bongoEnabled = !isEnabled("bongo");
             break;
         }
         stateFile.writeAdapter();
@@ -146,6 +156,7 @@ Item {
             property bool weatherEnabled: true
             property bool cavaEnabled: true
             property bool dockEnabled: true
+            property bool bongoEnabled: true
             property var dockPinned: ["kitty", "zen-twilight", "org.gnome.Nautilus", "dev.zed.Zed", "spotify"]
             property real clockX: -1
             property real clockY: -1

@@ -156,6 +156,7 @@ ShellRoot {
         sourceComponent: Bar {
             osd: mainOsd
             barLayout: barLayoutService
+            widgetService: widgetsService
             workspacesService: workspacesServiceInstance
             launcher: overlay.launcher
             controlCenter: overlay.controlCenter
