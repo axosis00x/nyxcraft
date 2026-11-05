@@ -69,9 +69,12 @@ Item {
     }
 
     property bool hasPlayer: player !== null
+    // Helium (and other browsers) report the site name as the track title
+    // for any page — Instagram, YouTube, whatever — so title is never a
+    // reliable signal that this is a generic site icon rather than real art.
+    // Artist staying empty/"Unknown artist" is the actual tell.
     readonly property bool heliumPlaceholderArt: !!player
         && /helium/i.test((player.identity || "") + " " + (player.desktopEntry || ""))
-        && (!player.trackTitle || player.trackTitle === "Unknown Title")
         && (!player.trackArtist || player.trackArtist === "Unknown artist")
 
     // ── Album art ─────────────────────────────────────────────────────────────
