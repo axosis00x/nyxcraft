@@ -39,6 +39,7 @@ in
       ripgrep
       yazi
       fetch
+      tuios
     ];
   };
 }
