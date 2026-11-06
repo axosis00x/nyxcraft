@@ -19,7 +19,6 @@ in
       neovim
       zed-editor
       claude-code
-      opencode
 
       # languages & runtimes
       jdk21
