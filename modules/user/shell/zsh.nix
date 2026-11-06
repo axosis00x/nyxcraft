@@ -65,6 +65,7 @@ in
 
       initContent = ''
         bindkey -e
+        unsetopt BEEP
         bindkey '^p' history-search-backward
         bindkey '^n' history-search-forward
 
