@@ -62,8 +62,8 @@ in
     services.mpd = {
       enable = true;
       user = username;
-      musicDirectory = "${userCfg.home}/Music";
       settings = {
+        music_directory = "${userCfg.home}/Music";
         audio_output = [
           {
             type = "pipewire";
