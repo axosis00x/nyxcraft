@@ -27,6 +27,7 @@ in
       wf-recorder
       hyprshot
       ani-cli
+      mpd
     ];
   };
 }
