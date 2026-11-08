@@ -6,6 +6,8 @@
 }:
 let
   cfg = config.systemSettings.services;
+  username = "axosis00x";
+  userCfg = config.users.users.${username};
 in
 {
   options = {
@@ -50,12 +52,24 @@ in
 
     services.timesyncd.enable = true;
     services.xserver.enable = true;
-    # NixOS adds xterm as a fallback terminal whenever X is enabled; not needed.
     services.xserver.excludePackages = [ pkgs.xterm ];
 
     services.openssh = {
       enable = false;
       settings.PasswordAuthentication = false;
     };
+
+    services.mpd = {
+      enable = true;
+      user = username;
+      musicDirectory = "${userCfg.home}/Music";
+      settings = {
+        audio_output = {
+          type = "pipewire";
+          name = "PipeWire Output";
+        };
+      };
+    };
+    systemd.services.mpd.environment.XDG_RUNTIME_DIR = "/run/user/${toString userCfg.uid}";
   };
 }
