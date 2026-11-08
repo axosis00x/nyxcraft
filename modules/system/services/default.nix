@@ -64,10 +64,12 @@ in
       user = username;
       musicDirectory = "${userCfg.home}/Music";
       settings = {
-        audio_output = {
-          type = "pipewire";
-          name = "PipeWire Output";
-        };
+        audio_output = [
+          {
+            type = "pipewire";
+            name = "PipeWire Output";
+          }
+        ];
       };
     };
     systemd.services.mpd.environment.XDG_RUNTIME_DIR = "/run/user/${toString userCfg.uid}";
