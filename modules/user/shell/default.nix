@@ -40,6 +40,7 @@ in
       yazi
       fetch
       tuios
+      rmpc
     ];
   };
 }
