@@ -14,6 +14,7 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = with pkgs; [
       wget
+      tldr
       curl
       glib
       gsettings-desktop-schemas
