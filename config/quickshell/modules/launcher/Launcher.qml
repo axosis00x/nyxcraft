@@ -7,16 +7,11 @@ import QtQuick.Layouts
 import "../../theme" as Palette
 import "../../components/material"
 
-// Note: DesktopEntries / DesktopEntry and ScriptModel are part of the base
-// "Quickshell" module, already imported above.
-
-// App launcher: search field at the bottom, fuzzy-ranked results above it
-// (best match nearest), boosted by launch count.
 Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
 
     property real maxWidth: 4000
@@ -30,14 +25,31 @@ Item {
     readonly property int itemH: 56
     readonly property int maxVisible: 5
 
-    // ── slash commands ───────────────────────────────────────────
-    // Typing "/" surfaces this palette; typing "/<cmd>" locks the list into
-    // that command's own items (still filterable by whatever follows).
     readonly property var commands: [
-        { cmd: "shaders", label: "Shaders", icon: "blur_on", desc: "Change the screen shader" },
-        { cmd: "sounds", label: "Sound Packs", icon: "keyboard", desc: "Change the wayclick sound pack" },
-        { cmd: "widgets", label: "Widgets", icon: "widgets", desc: "Toggle desktop widgets" },
-        { cmd: "settings", label: "Settings", icon: "settings", desc: "Open a settings page" }
+        {
+            cmd: "shaders",
+            label: "Shaders",
+            icon: "blur_on",
+            desc: "Change the screen shader"
+        },
+        {
+            cmd: "sounds",
+            label: "Sound Packs",
+            icon: "keyboard",
+            desc: "Change the wayclick sound pack"
+        },
+        {
+            cmd: "widgets",
+            label: "Widgets",
+            icon: "widgets",
+            desc: "Toggle desktop widgets"
+        },
+        {
+            cmd: "settings",
+            label: "Settings",
+            icon: "settings",
+            desc: "Open a settings page"
+        }
     ]
 
     readonly property bool isCommandInput: query.startsWith("/")
@@ -52,7 +64,6 @@ Item {
         return matchedCommand ? matchedCommand.cmd : "commands";
     }
 
-    // What the current list is being filtered by (drives match highlighting).
     readonly property string filterText: mode === "apps" ? query.trim() : (mode === "commands" ? commandWord : commandArg.trim())
 
     readonly property var commandItems: rank(commands, c => c.label, commandWord, c => c.cmd)
@@ -66,7 +77,6 @@ Item {
     readonly property var allWidgets: widgetsService ? widgetsService.widgets : []
     readonly property var widgetItems: rank(allWidgets, w => w.label, commandArg.trim())
 
-    // One entry per settings page; picking one opens the settings window there.
     readonly property var allSettings: settingsWindow ? settingsWindow.categories.map(c => ({
                 id: c.id,
                 label: c.title,
@@ -75,13 +85,8 @@ Item {
             })) : []
     readonly property var settingsItems: rank(allSettings, c => c.label, commandArg.trim())
 
-    // The list follows `listMode`, switched together with the row template
-    // in switchList(); changing both at once built "/" command rows with the
-    // app template, which showed nothing.
     property string listMode: "apps"
-    // Row animations stay off: with big reorders (each keystroke re-ranks
-    // dozens of apps) they left rows invisible or in the wrong slots.
-    // Results show instantly instead.
+
     readonly property bool listAnimated: false
 
     readonly property var currentList: {
@@ -137,13 +142,10 @@ Item {
         }
     }
 
-    // Grows and shrinks with the results (the stage springs to follow), so
-    // the field stays put at the bottom and the list rises out of it.
     readonly property int visibleRows: Math.max(1, Math.min(maxVisible, currentList.length))
     implicitWidth: Math.min(maxWidth - 32, Palette.Theme.listPanelWidth)
     implicitHeight: searchRow.height + visibleRows * itemH + listPanel.Layout.topMargin
 
-    // ── IPC ───────────────────────────────────────────────────────
     signal aboutToOpen
     signal aboutToClose
 
@@ -176,20 +178,18 @@ Item {
         }
     }
 
-    // ── matching ──────────────────────────────────────────────────
     function isBoundary(t, i) {
         return i === 0 || /[\s\-_.\/]/.test(t[i - 1]);
     }
 
-    // Scores `text` against `query`, or null if it doesn't match. Exact,
-    // prefix and word-start substrings rank highest; otherwise the query's
-    // letters must appear in order, scored up for consecutive runs and word
-    // starts and down for gaps, and loose scatters are rejected.
     function fuzzy(query, text) {
         var q = (query || "").toLowerCase();
         var t = (text || "").toLowerCase();
         if (q === "")
-            return { score: 0, indices: [] };
+            return {
+                score: 0,
+                indices: []
+            };
         if (t === "")
             return null;
         var at = t.indexOf(q);
@@ -198,7 +198,10 @@ Item {
             for (var k = 0; k < q.length; k++)
                 run.push(at + k);
             var score = t === q ? 1000 : (at === 0 ? 800 : (isBoundary(t, at) ? 600 : 400 - Math.min(at, 100)));
-            return { score: score, indices: run };
+            return {
+                score: score,
+                indices: run
+            };
         }
         var indices = [];
         var total = 0;
@@ -218,11 +221,12 @@ Item {
         }
         if (total < q.length * 8)
             return null;
-        return { score: Math.min(total, 300), indices: indices };
+        return {
+            score: Math.min(total, 300),
+            indices: indices
+        };
     }
 
-    // Filters and orders `list` by how well `label(item)` (or, if given,
-    // `alt(item)`) matches `q`; an empty query keeps the original order.
     function rank(list, label, q, alt) {
         if (!q)
             return list.slice();
@@ -236,7 +240,10 @@ Item {
                     best = a.score;
             }
             if (best >= 0)
-                scored.push({ item: item, score: best });
+                scored.push({
+                    item: item,
+                    score: best
+                });
         });
         scored.sort((a, b) => b.score - a.score);
         return scored.map(r => r.item);
@@ -246,7 +253,6 @@ Item {
         return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // `text` as StyledText with the letters matching the filter picked out.
     function highlight(text) {
         text = text || "";
         var m = filterText !== "" ? fuzzy(filterText, text) : null;
@@ -261,14 +267,11 @@ Item {
         return out;
     }
 
-    // ── app data ──────────────────────────────────────────────────
     property string query: ""
     property int selected: 0
     property var allApps: []
     property var displayApps: []
 
-    // Launch counts per desktop entry id: frequent apps float to the top of
-    // the unfiltered list and win ties while filtering.
     FileView {
         id: usageFile
         path: Quickshell.cachePath("launcher-usage.json")
@@ -319,12 +322,14 @@ Item {
                 m = fuzzy(q, d.genericName);
                 if (m && m.score * 0.8 > best)
                     best = m.score * 0.8;
-                // Keywords and descriptions only count as plain substrings;
-                // fuzzy letters across long text match almost anything.
+
                 if (best < 150 && ((d.keywords || []).join(" ").toLowerCase().indexOf(lower) !== -1 || (d.comment || "").toLowerCase().indexOf(lower) !== -1))
                     best = 150;
                 if (best >= 0)
-                    scored.push({ entry: d, score: best + Math.min(launchCount(d), 20) * 4 });
+                    scored.push({
+                        entry: d,
+                        score: best + Math.min(launchCount(d), 20) * 4
+                    });
             });
             scored.sort((a, b) => b.score - a.score || a.entry.name.localeCompare(b.entry.name));
             displayApps = scored.map(r => r.entry);
@@ -343,14 +348,10 @@ Item {
         Qt.callLater(root.resetList);
     }
 
-    // Rebuild the rows instead of letting the list apply a burst of moves:
-    // re-ranking reorders dozens of rows per keystroke, which left the
-    // bottom-to-top list scrolled wrong (gaps) until the pointer moved.
     function resetList() {
         appList.model = null;
         appList.model = appModel;
-        // Re-bind: reattaching the model resets currentIndex, and a plain
-        // assignment would break the binding hover selection relies on.
+
         appList.currentIndex = Qt.binding(() => root.selected);
         if (selected <= 0)
             appList.positionViewAtBeginning();
@@ -388,9 +389,6 @@ Item {
 
     onModeChanged: Qt.callLater(root.switchList)
 
-    // Runs after the mode change settles: empty the list, swap the row
-    // template, then load the new data, so rows never get the other kind's
-    // data (and no binding loop on currentList).
     function switchList() {
         if (listMode === mode)
             return;
@@ -448,7 +446,6 @@ Item {
         }
     }
 
-    // ── launch helper ─────────────────────────────────────────────
     function launchApp(entry) {
         recordLaunch(entry);
         var commandText = entry.command ? entry.command.join(" ").toLowerCase() : "";
@@ -466,9 +463,6 @@ Item {
             entry.execute();
     }
 
-    // Enter a command's slash prefix into the input and keep typing to
-    // filter that command's own list, without needing a separate "confirm"
-    // step — mirrors how typing the full command name locks in the mode.
     function commitCommand(command) {
         searchInput.text = "/" + command.cmd + " ";
         searchInput.cursorPosition = searchInput.text.length;
@@ -494,8 +488,6 @@ Item {
             closeLauncher();
             return;
         case "widgets":
-            // Toggling is non-exclusive (unlike picking a shader/sound), so
-            // stay open — the user likely wants to flip more than one.
             widgetsService.toggle(list[index].id);
             return;
         case "settings":
@@ -522,9 +514,6 @@ Item {
         moveSelectionTo(selected + delta);
     }
 
-    // Hover only selects when the pointer itself moves: rows sliding under
-    // a resting cursor while filtering must not steal the selection from
-    // the best match (Enter would launch the wrong app).
     property point lastPointer: Qt.point(-1, -1)
 
     function hoverSelect(item, mouse, index) {
@@ -536,9 +525,6 @@ Item {
             selected = index;
     }
 
-    // Single source of truth for launcher keyboard shortcuts — shared by
-    // both the search field and the list so behavior can't drift between them.
-    // The list runs bottom-to-top, so Up steps to the next result.
     function handleKey(event) {
         switch (event.key) {
         case Qt.Key_Up:
@@ -581,7 +567,6 @@ Item {
         }
     }
 
-    // A row's leading icon: the app's own icon, or a glyph on a tonal disc.
     component RowIcon: Item {
         property string iconSource: ""
         property string glyph: ""
@@ -697,9 +682,6 @@ Item {
         }
     }
 
-    // Shared row for the command palette, shader list and sound-pack list —
-    // same layout as appDelegate but with a glyph icon instead of a desktop
-    // icon image, and an active-item mark.
     Component {
         id: commandDelegate
 
@@ -768,7 +750,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                // Leave the widget toggle its own clicks.
+
                 anchors.rightMargin: commandRow.isWidget ? 70 : 0
                 onPositionChanged: mouse => root.hoverSelect(commandMouse, mouse, commandRow.index)
                 onClicked: {
@@ -783,7 +765,6 @@ Item {
         id: terminalLaunch
     }
 
-    // ── open / close ──────────────────────────────────────────────
     Component.onCompleted: rebuildApps()
 
     function openLauncher() {
@@ -793,14 +774,13 @@ Item {
             return;
         closeTimer.stop();
         aboutToOpen();
-        // Visible first: list changes on a hidden view skip their fade-in
-        // and leave rows invisible until something nudges them.
+
         visible = true;
         searchInput.text = "";
         query = "";
         filterApps();
         selected = 0;
-        // Fresh rows every open (rows built while hidden kept stale slots).
+
         resetList();
         searchInput.forceActiveFocus();
     }
@@ -834,7 +814,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ── results ───────────────────────────────────────────────
         Item {
             id: listPanel
             Layout.fillWidth: true
@@ -873,18 +852,16 @@ Item {
             ListView {
                 id: appList
                 anchors.fill: parent
-                // Best match sits right above the search field.
+
                 verticalLayoutDirection: ListView.BottomToTop
-                // A diffing model: filtering inserts, removes and moves rows
-                // (animated below) rather than resetting the whole list.
+
                 model: ScriptModel {
                     id: appModel
                     values: root.currentList
                 }
                 currentIndex: root.selected
                 Keys.priority: Keys.BeforeItem
-                // The selection is one tonal highlight gliding between rows
-                // (hover moves the selection too), not each row recoloring.
+
                 highlightFollowsCurrentItem: false
                 highlight: MovingHighlight {
                     target: appList.currentItem
@@ -895,9 +872,7 @@ Item {
                 }
                 onCurrentIndexChanged: if (currentIndex >= 0)
                     positionViewAtIndex(currentIndex, ListView.Contain)
-                // The panel springs to a new height as results change; keep
-                // the selection (normally the best match, at the bottom)
-                // pinned in view while it does.
+
                 onHeightChanged: keepInView()
                 onCountChanged: keepInView()
                 function keepInView() {
@@ -915,8 +890,6 @@ Item {
                 keyNavigationEnabled: false
                 cacheBuffer: 240
 
-                // Opacity fades always finish (alwaysRunToEnd): an interrupted
-                // fade left rows invisible until the pointer nudged them.
                 add: root.listAnimated ? addTransition : null
                 property Transition addTransition: Transition {
                     EffectMotion {
@@ -937,8 +910,6 @@ Item {
                     }
                 }
 
-
-
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AsNeeded
                     width: 4
@@ -958,12 +929,10 @@ Item {
 
                 Keys.onPressed: event => root.handleKey(event)
 
-                // Swapped in switchList(), ahead of the data.
                 delegate: appDelegate
             }
         }
 
-        // ── search bar ────────────────────────────────────────────
         Item {
             id: searchRow
             Layout.fillWidth: true
@@ -972,7 +941,7 @@ Item {
             Rectangle {
                 id: searchField
                 anchors.fill: parent
-                // One even gap on the sides and bottom.
+
                 anchors.leftMargin: 6
                 anchors.rightMargin: 6
                 anchors.topMargin: 6
@@ -987,8 +956,6 @@ Item {
                 anchors.rightMargin: 8
                 spacing: 12
 
-                // Mode glyph: search for apps, the command's own icon in a
-                // slash command.
                 Text {
                     text: root.mode === "apps" ? "search" : (root.matchedCommand ? root.matchedCommand.icon : "keyboard_command_key")
                     font.family: Palette.Theme.fontIcons
@@ -1014,9 +981,7 @@ Item {
                     selectedTextColor: Palette.Theme.accentText
                     clip: true
                     verticalAlignment: TextInput.AlignVCenter
-                    // Focusing the field on open (below) would otherwise
-                    // leave a blinking caret sitting over the empty
-                    // placeholder — only show it once there's real text.
+
                     cursorVisible: text !== ""
 
                     Text {
@@ -1034,7 +999,6 @@ Item {
                     Keys.onPressed: event => root.handleKey(event)
                 }
 
-                // Result count while filtering.
                 Text {
                     visible: root.filterText !== "" && root.currentList.length > 0
                     text: root.currentList.length
@@ -1044,7 +1008,6 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                 }
 
-                // clear button — fades in/out instead of popping
                 IconButton {
                     icon: "close"
                     opacity: searchInput.text !== "" ? 1 : 0

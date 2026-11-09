@@ -3,10 +3,6 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import "../theme" as Palette
 
-// Desktop weather widget: the condition glyph and temperature up top with
-// the place and today's high/low beside them, then a row of details (feels
-// like, humidity, wind). Data comes from services/WeatherService.qml; the
-// card matches the clock widget so the pair reads as one set.
 Item {
     id: root
 
@@ -25,16 +21,11 @@ Item {
     implicitHeight: 128
     width: implicitWidth
     height: implicitHeight
-    // Size from Settings → Customize, grown from the top-left corner so the
-    // saved position stays put.
+
     scale: Palette.Theme.weatherScale
     transformOrigin: Item.TopLeft
     visible: available
 
-    // Free-floating on the desktop layer (not laid out by a parent Layout),
-    // so position has to be set explicitly — falls back to the caller's
-    // default corner spot until the widget has been dragged at least once.
-    // Clamped so a saved spot from a smaller layout stays on screen.
     x: Math.min(widgetsService && widgetsService.hasPosition(widgetId) ? widgetsService.positionX(widgetId) : defaultX, parent ? parent.width - width * scale : 0)
     y: Math.min(widgetsService && widgetsService.hasPosition(widgetId) ? widgetsService.positionY(widgetId) : defaultY, parent ? parent.height - height * scale : 0)
 
@@ -129,7 +120,6 @@ Item {
             }
         }
 
-        // Details, as three evenly spread chips.
         RowLayout {
             Layout.fillWidth: true
             spacing: 6
@@ -186,8 +176,6 @@ Item {
         }
     }
 
-    // Drag-to-reposition. Position is persisted on release rather than on
-    // every move, to avoid hammering the state file.
     MouseArea {
         anchors.fill: parent
         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor

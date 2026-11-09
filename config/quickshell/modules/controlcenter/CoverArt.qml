@@ -2,9 +2,6 @@ import Quickshell.Widgets
 import QtQuick
 import "../../theme" as Palette
 
-// Album art with rounded corners, or a music note while there is none.
-// `source` should be the media panel's cached local file (artSource), never
-// the raw MPRIS URL.
 ClippingRectangle {
     id: root
 

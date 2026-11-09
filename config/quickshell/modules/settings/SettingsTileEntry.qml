@@ -1,7 +1,6 @@
 import QtQuick
 import "../../components/material"
 
-// Wires a tile-layout row spec to the panel's live state.
 Tile {
     id: entry
 

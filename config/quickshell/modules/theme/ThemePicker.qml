@@ -8,15 +8,10 @@ import QtQuick.Layouts
 import "../../theme" as Palette
 import "../../components/material"
 
-// Theme picker in the style of Caelestia's scheme list, laid out like the
-// launcher: a pill search field on the bottom edge, themes stacked above it.
-// Each row previews the theme with a split disc (its background and accent)
-// beside its name and kind, and rings the active one. Filtering animates
-// through a ScriptModel and the panel resizes to fit.
 Item {
     id: root
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -32,7 +27,6 @@ Item {
     readonly property int itemH: 56
     readonly property int maxVisible: 5
 
-    // Prefix matches first, then substring matches, each alphabetical.
     readonly property var themes: {
         if (!service)
             return [];
@@ -43,7 +37,7 @@ Item {
     }
 
     readonly property int visibleRows: Math.max(1, Math.min(maxVisible, themes.length))
-    // Same footprint as the launcher (row height, rows, width).
+
     implicitWidth: Math.min(maxWidth - 32, Palette.Theme.listPanelWidth)
     implicitHeight: searchRow.height + visibleRows * itemH + 6
 
@@ -72,12 +66,12 @@ Item {
             powerMenu.closePowerMenu();
         closeTimer.stop();
         aboutToOpen();
-        // Visible first, so the list's fade-ins actually run.
+
         visible = true;
         search.text = "";
         query = "";
         service.refresh();
-        // Start on the active theme.
+
         selected = Math.max(0, themes.indexOf(service.activeTheme));
         search.forceActiveFocus();
     }
@@ -117,7 +111,6 @@ Item {
         return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
     }
 
-    // The list runs bottom-to-top, so Up steps further up the list.
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             if (search.text !== "")
@@ -137,7 +130,6 @@ Item {
         }
     }
 
-    // Hover only selects on real pointer movement (see Launcher.qml).
     property point lastPointer: Qt.point(-1, -1)
     function hoverSelect(item, mouse, index) {
         var p = item.mapToItem(null, mouse.x, mouse.y);
@@ -151,7 +143,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ── themes ────────────────────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -188,8 +179,7 @@ Item {
 
                 onCurrentIndexChanged: if (currentIndex >= 0)
                     positionViewAtIndex(currentIndex, ListView.Contain)
-                // Keep the selection in view while the panel springs to
-                // its new height and as the list changes.
+
                 onHeightChanged: keepInView()
                 onCountChanged: keepInView()
                 function keepInView() {
@@ -248,9 +238,6 @@ Item {
                         anchors.rightMargin: 14
                         spacing: 14
 
-                        // Split disc: the theme's background on the left,
-                        // its accent on the right, ringed in its accent when
-                        // it's the active theme.
                         Item {
                             Layout.preferredWidth: 30
                             Layout.preferredHeight: 30
@@ -329,7 +316,6 @@ Item {
             }
         }
 
-        // ── search bar ────────────────────────────────────────────
         Item {
             id: searchRow
             Layout.fillWidth: true
@@ -338,7 +324,7 @@ Item {
             Rectangle {
                 id: searchField
                 anchors.fill: parent
-                // One even gap on the sides and bottom.
+
                 anchors.leftMargin: 6
                 anchors.rightMargin: 6
                 anchors.topMargin: 6

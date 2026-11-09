@@ -3,14 +3,12 @@ import QtQuick.Shapes
 import "../../components/material"
 import "../../theme" as Palette
 
-// A circular gauge: a quiet track with an accent arc sweeping clockwise
-// from the top, the value in the middle and a label underneath.
 Item {
     id: root
 
     property real value: 0
     property string label: ""
-    // What's printed in the middle; defaults to the percentage.
+
     property string text: Math.round(value * 100) + "%"
     property string caption: ""
     property real size: 72
@@ -20,7 +18,6 @@ Item {
     implicitWidth: Math.max(size, labelColumn.implicitWidth)
     implicitHeight: size + labelColumn.implicitHeight + 8
 
-    // Eases to new readings rather than jumping.
     property real shown: Math.max(0, Math.min(1, value))
     Behavior on shown {
         NumberAnimation {

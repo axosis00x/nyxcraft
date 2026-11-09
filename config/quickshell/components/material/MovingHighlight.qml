@@ -1,20 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// One highlight that glides between list rows instead of each row lighting
-// up on its own: it springs to whichever item `target` points at and fades
-// in place when `target` goes null (pointer left the list). Its size never
-// animates, and it snaps (no slide) when it appears or when the target's own
-// geometry changes, so opening a list never sweeps the highlight in.
-//
-// As a ListView/GridView highlight:
-//   highlightFollowsCurrentItem: false
-//   highlight: MovingHighlight { target: view.currentItem }
-// For a plain Column/Repeater, place it as a sibling below the rows and
-// point `target` at the hovered/selected delegate.
-//
-// Defaults to a filled state; for an outline ring drawn over opaque cards,
-// set color: "transparent", border.width/color, and z above the delegates.
 Rectangle {
     id: root
 
@@ -50,8 +36,6 @@ Rectangle {
         EffectMotion {}
     }
 
-    // Snap instead of glide: when the list (re)opens, and whenever the target
-    // itself moves or resizes (layout settling) — only switching rows glides.
     function snap() {
         instant = true;
         sync();
@@ -71,7 +55,6 @@ Rectangle {
     }
 
     onTargetChanged: {
-        // Snap when (re)appearing, glide when moving between rows.
         instant = opacity < 0.05;
         sync();
         instant = false;

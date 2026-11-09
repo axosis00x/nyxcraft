@@ -1,7 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// Round icon button with a state layer and a springy press.
 Item {
     id: root
 
@@ -10,8 +9,6 @@ Item {
     property color iconColor: Palette.Theme.textSecondary
     property color stateColor: Palette.Theme.textPrimary
     property int iconSize: Palette.Theme.iconSize
-    // Hover/press shape; a circle by default. Inside a container, set it to
-    // the container's radius minus the inset so the corners stay concentric.
     property real stateRadius: Math.min(width / 2, Palette.Theme.radiusLarge)
     signal clicked
 

@@ -3,9 +3,6 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Phone-style battery: a rounded body filled to the charge level with the
-// percentage printed inside, a small terminal nub, and a bolt while
-// charging. Accent while charging, the error colour when low.
 Item {
     id: root
 
@@ -21,8 +18,6 @@ Item {
     implicitWidth: body.width + 3
     implicitHeight: 12
 
-    // ClippingRectangle (unlike clip: true) keeps the fill inside the
-    // body's rounded corners.
     ClippingRectangle {
         id: body
         width: 28
@@ -30,7 +25,6 @@ Item {
         radius: 4
         color: Qt.alpha(Palette.Theme.textPrimary, 0.18)
 
-        // Charge level.
         Rectangle {
             anchors.left: parent.left
             anchors.top: parent.top
@@ -64,7 +58,7 @@ Item {
                 id: label
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.percent
-                // Dark on a mostly-filled body, light on a mostly-empty one.
+
                 color: root.level > 0.5 ? Palette.Theme.surfaceSolid : Palette.Theme.textPrimary
                 font.family: Palette.Theme.fontSans
                 font.pixelSize: 8
@@ -73,7 +67,6 @@ Item {
         }
     }
 
-    // Terminal nub.
     Rectangle {
         anchors.left: body.right
         anchors.leftMargin: 1

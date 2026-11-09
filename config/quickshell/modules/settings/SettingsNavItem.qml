@@ -2,18 +2,15 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Sidebar entry. The selection highlight is drawn by the sidebar (it glides
-// between entries); an entry only adds its hover/press state layer, which
-// covers exactly the same box so the two always line up.
 Item {
     id: root
 
     property string icon: ""
     property string label: ""
     property bool selected: false
-    // The category's own hue for its icon.
+
     property color hue: Palette.Theme.accent
-    // The sidebar's highlight glides here on hover (see SettingsWindow).
+
     readonly property bool hovered: mouse.containsMouse
     signal clicked
 

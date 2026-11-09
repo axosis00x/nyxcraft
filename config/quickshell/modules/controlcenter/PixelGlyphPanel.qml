@@ -3,17 +3,11 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Nothing-style glyph matrix playing a pattern. A toy; it controls nothing.
-//   hover: glow and control bar   click: ring + next pattern   drag: paint
-//   scroll: change pattern        right click: pause
 Item {
     id: root
 
-    // Animate only while on screen.
     property bool running: visible
 
-    // A fixed number of rows; as many columns as the width fits (odd, so
-    // the patterns have a centre column).
     readonly property int rows: 13
     readonly property real pitch: (height - 20) / rows
     readonly property int cols: {
@@ -23,11 +17,9 @@ Item {
     readonly property real dotSize: Math.max(2, Math.round(pitch * 0.62))
 
     readonly property var modeNames: ["Ripple", "Radar", "Rain", "Heart", "Clock", "Name", "Sand timer"]
-    // Each pattern glows in its own hue from the theme.
+
     readonly property color hue: [Palette.Theme.accent, Palette.Theme.aqua, Palette.Theme.blue, Palette.Theme.purple, Palette.Theme.yellow, Palette.Theme.green, Palette.Theme.orange][mode]
 
-    // `tick` always runs (so touches answer even while paused); `phase`
-    // drives the pattern and stops while paused.
     property int tick: 0
     property int phase: 0
     property int mode: 0
@@ -36,9 +28,8 @@ Item {
     property bool autoCycle: true
     property var now: new Date()
 
-    // Touch state, mutated in place; every dot re-reads it each tick.
-    property var bursts: []     // [{ x, y, at }]
-    property var painted: ({})  // cell index -> tick it was painted
+    property var bursts: []
+    property var painted: ({})
     property real hoverCol: -10
     property real hoverRow: -10
 
@@ -76,19 +67,13 @@ Item {
         }
     }
 
-    // A stable pseudo-random number per column, for the rain.
     function hash(n) {
         var s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
         return s - Math.floor(s);
     }
 
-    // 3×5 digits for the clock pattern.
     readonly property var digits: [["111", "101", "101", "101", "111"], ["010", "110", "010", "010", "111"], ["111", "001", "111", "100", "111"], ["111", "001", "111", "001", "111"], ["101", "101", "111", "001", "001"], ["111", "100", "111", "001", "111"], ["111", "100", "111", "101", "111"], ["111", "001", "010", "010", "010"], ["111", "101", "111", "101", "111"], ["111", "101", "111", "001", "111"]]
 
-    // A small lowercase pixel font for the name pattern: 3 dots wide, a
-    // 3-dot x-height with short ascenders and a 1-dot descender (6 rows,
-    // top to bottom). Digits use the clock's 3×5 digits; anything else is
-    // a gap.
     readonly property var letters: ({
             a: ["000", "000", "011", "101", "011", "000"],
             b: ["100", "100", "110", "101", "110", "000"],
@@ -118,9 +103,6 @@ Item {
             z: ["000", "000", "110", "010", "011", "000"]
         })
 
-    // The username (whoever is logged in, read from $USER when the shell
-    // starts), as written, as a strip of 6-dot columns with a blank column
-    // between characters.
     readonly property var nameColumns: {
         var text = String(Quickshell.env("USER") || "user").toLowerCase();
         var out = [];
@@ -144,7 +126,6 @@ Item {
         return digits[value][y].charAt(x) === "1";
     }
 
-    // How lit the dot at (x, y) is from the pattern alone, from 0 to 1.
     function level(x, y, t, mode) {
         var cx = (cols - 1) / 2, cy = (rows - 1) / 2;
         var dx = x - cx, dy = y - cy;
@@ -158,8 +139,6 @@ Item {
             return Math.exp(-a * 1.4);
         }
         if (mode === 3) {
-            // A heart that beats "lub-dub": it swells on each thump and
-            // settles back.
             var p = t % 14;
             var beat = Math.exp(-p * 0.9) + (p >= 3 ? 0.6 * Math.exp(-(p - 3) * 0.9) : 0);
             var k = 5.4 * (0.84 + 0.16 * beat);
@@ -168,8 +147,6 @@ Item {
             return f <= 0 ? 1 : 0;
         }
         if (mode === 4) {
-            // Hours over minutes, two 3×5 digits each, with a dot between
-            // the rows blinking the seconds.
             var h = now.getHours(), m = now.getMinutes();
             var left = Math.round(cx) - 3, top = Math.round(cy) - 5;
             var col = x - left, row = y - top;
@@ -184,7 +161,6 @@ Item {
             return 0;
         }
         if (mode === 5) {
-            // The name scrolls in from the right, then off to the left.
             var span = nameColumns.length + cols;
             var shift = Math.floor(t * 0.45) % span;
             var ci = x + shift - cols;
@@ -194,26 +170,24 @@ Item {
             return nameColumns[ci].charAt(gr) === "1" ? 1 : 0;
         }
         if (mode === 6) {
-            // An hourglass: a faint outline, sand draining from the top bulb
-            // through the neck into the bottom one, then starting over.
             var ady = Math.abs(dy), adx = Math.abs(dx);
             var halfRows = Math.round(cy);
             if (ady === halfRows)
-                return adx <= halfRows ? 0.3 : 0;         // caps
+                return adx <= halfRows ? 0.3 : 0;
             if (adx > ady)
                 return 0;
             if (adx === ady && ady > 0)
-                return 0.3;                               // glass walls
+                return 0.3;
             var period = 140;
             var progress = (t % period) / period;
-            var bulb = halfRows - 1;                      // sand rows per bulb
+            var bulb = halfRows - 1;
             var topLevel = Math.ceil(bulb * (1 - progress));
             var bottomLevel = Math.ceil(bulb * progress);
-            if (dy < 0)                                   // top: sits on the neck
+            if (dy < 0)
                 return -dy <= topLevel ? 1 : 0;
-            if (dy > 0 && dy > bulb - bottomLevel)        // bottom: piles up
+            if (dy > 0 && dy > bulb - bottomLevel)
                 return 1;
-            // The falling stream, flickering down the middle.
+
             if (adx === 0 && progress > 0 && progress < 1 && (y + t) % 2 === 0)
                 return 0.85;
             return 0;
@@ -223,7 +197,6 @@ Item {
         return d >= 0 && d < 5 ? 1 - d / 5 : 0;
     }
 
-    // What touch adds on top: the pointer's glow, burst rings and paint.
     function touch(index, x, y, t) {
         var v = 0;
         var hd = Math.hypot(x - hoverCol, y - hoverRow);
@@ -247,8 +220,6 @@ Item {
         return v;
     }
 
-    // The control bar shows while the pointer is in the square. One mouse area
-    // handles everything; `inside` resets when the panel stops running.
     readonly property bool shown: root.running && mouse.inside
 
     onRunningChanged: {
@@ -295,8 +266,6 @@ Item {
                 readonly property int row: Math.floor(index / root.cols)
                 readonly property real reach: Math.hypot(Math.max(0, Math.abs(col - (root.cols - 1) / 2) - (root.cols - root.rows) / 2), row - (root.rows - 1) / 2)
 
-                // Clip the grid to a capsule (a circle when square), like the
-                // phone's round matrix.
                 visible: reach <= root.rows / 2
                 x: col * root.pitch + (root.pitch - width) / 2
                 y: row * root.pitch + (root.pitch - height) / 2
@@ -317,7 +286,6 @@ Item {
         }
     }
 
-    // The pattern's name, while hovered and briefly after it changes.
     Rectangle {
         anchors.top: parent.top
         anchors.topMargin: 6
@@ -348,7 +316,6 @@ Item {
         }
     }
 
-    // Controls along the bottom edge, faded and nudged in while hovered.
     Rectangle {
         id: bar
         anchors.horizontalCenter: parent.horizontalCenter
@@ -404,7 +371,6 @@ Item {
         }
     }
 
-    // On top of everything: the only mouse area in the panel.
     MouseArea {
         id: mouse
 
@@ -422,7 +388,6 @@ Item {
             root.hoverRow = -10;
         }
 
-        // The bar button under (x, y), if the bar is showing.
         function buttonAt(x, y) {
             if (!root.running)
                 return null;
@@ -439,7 +404,6 @@ Item {
             return root.running && bar.contains(mapToItem(bar, x, y));
         }
 
-        // Pointer position in (fractional) cells, so the glow glides.
         function track(x, y) {
             if (overBar(x, y)) {
                 root.hoverCol = -10;
@@ -500,8 +464,6 @@ Item {
         }
     }
 
-    // A small round button on the bar. It has no mouse area of its own; the
-    // panel's one mouse area tells it when it's hovered or pressed.
     component BarButton: Item {
         id: button
 

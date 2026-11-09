@@ -8,8 +8,6 @@ import QtQuick.Effects
 import "../../theme" as Palette
 import "../../components/material"
 
-// Notch-embedded media player panel. Follows the same open/close signal
-// contract as Clipboard and PowerMenu so CenterOverlay can manage it uniformly.
 Item {
     id: root
 
@@ -17,7 +15,6 @@ Item {
     signal aboutToClose
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
     readonly property bool closing: hideTimer.running
     focus: true
 
@@ -38,9 +35,6 @@ Item {
     implicitHeight: body.implicitHeight + 32
     property bool island: false
 
-    // ── MPRIS player selection ────────────────────────────────────────────────
-    // Follows whatever is playing, unless a player was picked with the
-    // switcher chip (pinned by D-Bus name until it goes away).
     property string pinnedPlayer: ""
     property var player: {
         var list = Mpris.players.values;
@@ -69,19 +63,7 @@ Item {
     }
 
     property bool hasPlayer: player !== null
-    // Helium (and other browsers) report the site name as the track title
-    // for any page — Instagram, YouTube, whatever — so title is never a
-    // reliable signal that this is a generic site icon rather than real art.
-    // Artist staying empty/"Unknown artist" is the actual tell.
-    readonly property bool heliumPlaceholderArt: !!player
-        && /helium/i.test((player.identity || "") + " " + (player.desktopEntry || ""))
-        && (!player.trackArtist || player.trackArtist === "Unknown artist")
-
-    // ── Album art ─────────────────────────────────────────────────────────────
-    // Remote covers (Spotify's https URLs) are fetched with curl into a small
-    // cache and shown from disk. Qt's own network loader hung on them, and
-    // binding an Image straight to MPRIS metadata is the path that crashed
-    // Quickshell after hot reloads; a plain local file avoids both.
+    readonly property bool heliumPlaceholderArt: !!player && /helium/i.test((player.identity || "") + " " + (player.desktopEntry || "")) && (!player.trackArtist || player.trackArtist === "Unknown artist")
     readonly property string artUrl: player ? (player.trackArtUrl || "") : ""
     property string artSource: ""
     onArtUrlChanged: fetchArt()
@@ -108,24 +90,10 @@ Item {
             }
         }
     }
-
-    // Browsers (Zen/Firefox playing YouTube) do publish mpris:length, but
-    // Quickshell's MPRIS service sometimes misses it, reporting
-    // lengthSupported=false and mirroring the position into `length`. When
-    // that happens, read the length straight from the player over D-Bus.
-    // Some browser MPRIS players briefly report length as the current
-    // position even while lengthSupported is stale/true. Don't treat that
-    // mirrored value as a track duration or the progress appears complete.
-    // Treat implausibly large durations as unbounded (live/unknown). Some
-    // MPRIS players expose the largest integer as a placeholder for live media.
     readonly property real maxTrackLength: 100 * 365 * 24 * 60 * 60
-    readonly property bool nativeLength: !!player && player.lengthSupported
-        && isFinite(player.length) && player.length > player.position + 0.5
-        && player.length <= maxTrackLength
+    readonly property bool nativeLength: !!player && player.lengthSupported && isFinite(player.length) && player.length > player.position + 0.5 && player.length <= maxTrackLength
     property real fallbackLength: 0
     property bool fallbackIsLive: false
-    // Prefer the raw metadata duration when present. This avoids relying on
-    // lengthSupported, which browser players can update after playback starts.
     readonly property real rawMetadataLength: {
         if (!player || !player.metadata)
             return 0;
@@ -137,9 +105,6 @@ Item {
     readonly property real trackLength: metadataLength > 0 ? metadataLength : (nativeLength ? player.length : fallbackLength)
     readonly property bool lengthKnown: !!player && trackLength > 0
     readonly property bool liveTrack: metadataIsLive || fallbackIsLive
-
-    // Read once per track (and refreshed while the panel is open, since the
-    // browser can publish the length a moment after the title).
     function readFallbackLength() {
         if (!player || nativeLength || lengthRead.running)
             return;
@@ -187,12 +152,12 @@ Item {
         return Math.min(1, Math.max(0, player.position / trackLength));
     }
 
-    // Poll position while playing so the progress bar animates.
     Timer {
         interval: 500
         running: root.hasPlayer && root.player !== null && root.player.isPlaying && root.visible
         repeat: true
-        onTriggered: if (root.player) root.player.positionChanged()
+        onTriggered: if (root.player)
+            root.player.positionChanged()
     }
 
     function formatTime(seconds) {
@@ -207,7 +172,6 @@ Item {
         return Math.floor(total / 60) + ":" + (sec < 10 ? "0" : "") + sec;
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
     function open() {
         visible = true;
         hideTimer.stop();
@@ -238,16 +202,8 @@ Item {
         onTriggered: root.visible = false
     }
 
-    // Changes whenever the track does; drives the track-change motion.
     readonly property string trackKey: player ? (player.trackTitle || "") + "\u0001" + (player.trackArtist || "") : ""
     onTrackKeyChanged: trackChange.restart()
-
-    // ── Backdrop: the cover, heavily blurred and dimmed ──────────────────────
-    // Gives each track its own mood. The blurred cover is drawn larger than
-    // the panel (by `bleed` on every side) so the blur has real image to
-    // sample at the edges instead of fading to a dark rim, then masked back
-    // to the panel's exact silhouette: flat top corners in notch mode, with
-    // all four corners rounded when the bar is in island mode.
     Item {
         id: backdrop
         anchors.fill: parent
@@ -272,7 +228,6 @@ Item {
             visible: false
         }
 
-        // Mask covering the oversized effect, opaque only over the panel.
         Item {
             id: backdropMask
             anchors.fill: backdropImg
@@ -283,7 +238,6 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: backdrop.bleed
-                // Same corners as the panel (they follow the roundness setting).
                 topLeftRadius: root.island ? Palette.Theme.radiusLarge : 0
                 topRightRadius: root.island ? Palette.Theme.radiusLarge : 0
                 bottomLeftRadius: Palette.Theme.radiusLarge
@@ -304,34 +258,21 @@ Item {
             opacity: 0.22
             maskEnabled: true
             maskSource: backdropMask
-            // Soft mask edge so the curve blends into the notch outline.
+
             maskThresholdMin: 0.5
             maskSpreadAtMin: 1.0
         }
     }
-
-    // ── Content ───────────────────────────────────────────────────────────────
-    // Art and track info on top, then elapsed · wave · total, then a centered
-    // row of controls. Material 3 Expressive motion throughout: springy
-    // presses, a cookie-shaped play button that turns while playing, icons
-    // that nudge toward where they send you, and a wave that ripples while
-    // playing and settles flat when paused.
     RowLayout {
         id: body
         anchors.fill: parent
         anchors.margins: 16
         spacing: 16
-
-        // Album art: a square as tall as the column beside it. A
-        // ClippingRectangle (unlike clip: true) clips to its rounded corners.
         ClippingRectangle {
             id: art
             Layout.preferredWidth: column.implicitHeight
             Layout.preferredHeight: column.implicitHeight
             Layout.alignment: Qt.AlignVCenter
-            // Keep album art corners softer than the player surface. The size
-            // cap prevents high roundness settings from turning small covers
-            // into pill-shaped tiles.
             radius: Math.min(Palette.Theme.radiusSmall, Math.min(width, height) * 0.18)
             color: Palette.Theme.surfaceContainerHigh
 
@@ -341,8 +282,6 @@ Item {
                 source: root.artSource
                 sourceSize: Qt.size(240, 240)
                 fillMode: Image.PreserveAspectCrop
-                // icon itself is inset in a square canvas, so crop that canvas
-                // away and let the blue rounded icon fill the tile.
                 scale: root.heliumPlaceholderArt ? 1.32 : 1
                 smooth: true
                 asynchronous: true
@@ -365,7 +304,6 @@ Item {
             }
         }
 
-        // Title, artist, progress and controls share one left edge.
         ColumnLayout {
             id: column
             Layout.fillWidth: true
@@ -385,7 +323,6 @@ Item {
                     Layout.fillWidth: true
                     spacing: 8
 
-                    // Long titles scroll back and forth instead of eliding.
                     Item {
                         id: titleClip
                         Layout.fillWidth: true
@@ -434,7 +371,6 @@ Item {
                         }
                     }
 
-                    // Which player this is; with several, click to switch.
                     Rectangle {
                         id: playerChip
                         visible: root.hasPlayer
@@ -503,9 +439,6 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    // Always present (never hidden), so the panel — and the
-                    // art sized to this column — is the same height whether
-                    // or not anything is playing.
                     text: root.player ? (root.player.trackArtist || "Unknown artist") : "Enjoy the void of nothing"
                     color: Palette.Theme.textSecondary
                     font.family: Palette.Theme.fontMono
@@ -514,7 +447,6 @@ Item {
                 }
             }
 
-            // The wave runs the full width; the times sit with the controls.
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 10
@@ -534,7 +466,6 @@ Item {
                         anchors.fill: parent
 
                         readonly property real wavelength: 18
-                        // Ripples while playing and settles flat when paused.
                         property real amplitude: root.hasPlayer && root.player.isPlaying && !waveArea.dragging ? 2.6 : 0
                         Behavior on amplitude {
                             SpatialMotion {}
@@ -547,7 +478,6 @@ Item {
                             loops: Animation.Infinite
                             running: root.visible && wave.amplitude > 0.01
                         }
-                        // The handle grows while hovered or dragged.
                         property real handleHalf: waveArea.dragging ? 10 : (waveArea.hovering ? 9 : 7)
                         Behavior on handleHalf {
                             SpatialMotion {
@@ -580,7 +510,7 @@ Item {
                             var ctx = getContext("2d");
                             ctx.reset();
                             var w = width, mid = height / 2, gap = 4;
-                            // Length unknown: the wave runs the full width, no handle.
+
                             var splitX = root.lengthKnown ? 2 + (w - 4) * shown : w + gap;
                             ctx.lineCap = "round";
                             ctx.lineJoin = "round";
@@ -647,7 +577,6 @@ Item {
                             waveArea.dragging = false;
                         }
                         onCanceled: waveArea.dragging = false
-                        // Scroll to nudge ±5 s.
                         onWheel: wheel => {
                             if (!root.player || !root.lengthKnown)
                                 return;
@@ -658,7 +587,6 @@ Item {
                 }
             }
 
-            // Elapsed · controls (centred) · total
             Item {
                 Layout.fillWidth: true
                 Layout.topMargin: 2
@@ -702,7 +630,6 @@ Item {
                         onClicked: root.player.previous()
                     }
 
-                    // Play / pause: a cookie that slowly turns while playing.
                     Item {
                         id: playButton
                         implicitWidth: 36
@@ -724,8 +651,6 @@ Item {
                             lobes: 8
                             amplitude: 0.07
 
-                            // Pauses (rather than stops) with playback, so it
-                            // resumes from the angle it stopped at.
                             NumberAnimation on rotation {
                                 from: 0
                                 to: 360
@@ -744,7 +669,7 @@ Item {
                             font.family: Palette.Theme.fontIcons
                             font.weight: Palette.Theme.iconWeight
                             font.pixelSize: Palette.Theme.iconSizeLarge
-                            // Pops when it switches between play and pause.
+
                             onTextChanged: iconPop.restart()
 
                             SequentialAnimation {
@@ -785,7 +710,6 @@ Item {
                     }
 
                     ToggleControl {
-                        // off → all → one
                         icon: supported && root.player.loopState === MprisLoopState.Track ? "repeat_one" : "repeat"
                         supported: root.hasPlayer && root.player.loopSupported
                         on: supported && root.player.loopState !== MprisLoopState.None
@@ -799,7 +723,6 @@ Item {
         }
     }
 
-    // Track change: art pops, info slides in.
     ParallelAnimation {
         id: trackChange
         SequentialAnimation {
@@ -838,7 +761,6 @@ Item {
         }
     }
 
-    // Previous / next: theme-rounded controls whose icon nudges the way it skips.
     component SkipControl: Rectangle {
         id: skip
 
@@ -918,8 +840,6 @@ Item {
         }
     }
 
-    // Shuffle / repeat: quiet when off; when on, a tonal accent background
-    // morphs in and the circle squares off a little.
     component ToggleControl: Rectangle {
         id: toggle
 

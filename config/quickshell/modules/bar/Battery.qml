@@ -13,7 +13,6 @@ Item {
     readonly property bool available: bar ? bar.batteryAvailable : false
     readonly property string iconFontFamily: Palette.Theme.fontIcons || "Material Symbols Outlined"
 
-    // Neutral by default; color only signals something worth noticing.
     readonly property color colorCritical: Palette.Theme.errorColor
     readonly property color colorLow: Palette.Theme.warning
     readonly property color colorMedium: Palette.Theme.textSecondary

@@ -5,17 +5,12 @@ import QtQuick.Layouts
 import "../material"
 import "../../theme" as Palette
 
-// Live activity: the top notch widens into a pill while something runs:
-// a recording (click to stop), a timer (`qs ipc call timer start <s>`,
-// `... timer stop`) or a download (click to open the folder).
 Item {
     id: root
 
     property var bar: null
-    // Height of the notch the pill grows out of, so it stays as slim.
     property real baseHeight: 34
 
-    // ── sources ─────────────────────────────────────────────────────
     readonly property bool recording: bar ? bar.isRecording : false
     property double recordStart: 0
     onRecordingChanged: recordStart = recording ? Date.now() : 0
@@ -24,7 +19,7 @@ Item {
     property double timerTotal: 0
     readonly property bool timing: timerEnd > 0
 
-    property var downloads: [] // [{ name, size }]
+    property var downloads: []
 
     readonly property var activities: {
         var list = [];
@@ -37,10 +32,8 @@ Item {
         return list;
     }
     readonly property string kind: activities.length > 0 ? activities[0] : ""
-    // CenterOverlay shows this on the stage while true.
     readonly property bool wanted: kind !== "" && !(bar && bar.centerActivitySuppressed)
 
-    // A 1 s clock for elapsed/remaining times; runs only while needed.
     property double now: Date.now()
     Timer {
         interval: 1000
@@ -92,7 +85,6 @@ Item {
         id: notifier
     }
 
-    // Partial downloads. One cheap `find` every few seconds.
     Process {
         id: downloadScan
         command: ["sh", "-c", "d=$(xdg-user-dir DOWNLOAD 2>/dev/null); [ -d \"$d\" ] || d=\"$HOME/Downloads\"; find \"$d\" -maxdepth 1 -type f \\( -name '*.part' -o -name '*.crdownload' -o -name '*.download' -o -name '*.partial' \\) -printf '%s\\t%f\\n' 2>/dev/null"]
@@ -107,7 +99,7 @@ Item {
                             name: line.slice(tab + 1).replace(/\.(part|crdownload|download|partial)$/, "")
                         });
                 });
-                // Avoid re-binding the pill when nothing changed.
+
                 if (JSON.stringify(list) !== JSON.stringify(root.downloads))
                     root.downloads = list;
             }
@@ -125,20 +117,16 @@ Item {
         id: action
     }
 
-    // ── pill ────────────────────────────────────────────────────────
     readonly property string icon: kind === "record" ? "radio_button_checked" : kind === "timer" ? "timer" : kind === "download" ? "download" : ""
     readonly property color tone: kind === "record" ? Palette.Theme.errorColor : kind === "timer" ? Palette.Theme.yellow : Palette.Theme.blue
     readonly property string label: kind === "record" ? "Recording" : kind === "timer" ? "Timer" : kind === "download" ? downloads[0].name : ""
     readonly property string value: kind === "record" ? clock(now - recordStart) : kind === "timer" ? clock(timerEnd - now) : kind === "download" ? size(downloads[0].size) : ""
-    // 0–1 for the timer, -1 (indeterminate) for downloads, none otherwise.
     readonly property real progress: kind === "timer" ? Math.min(1, 1 - (timerEnd - now) / timerTotal) : kind === "download" ? -1 : 0
     readonly property real contentWidth: iconText.implicitWidth + labelText.implicitWidth + valueText.implicitWidth + 16 + 24 + (activities.length > 1 ? more.implicitWidth + 18 : 0)
 
     implicitWidth: Math.min(260, Math.max(160, contentWidth))
     implicitHeight: Math.max(baseHeight, 34)
     enabled: wanted
-    // Hidden once faded out: a transparent item still catches hover, which
-    // blocked the power and tool menus beneath it on the top stage.
     visible: opacity > 0.01
 
     RowLayout {
@@ -155,7 +143,6 @@ Item {
             font.weight: Palette.Theme.iconWeight
             font.pixelSize: Palette.Theme.iconSizeSmall
 
-            // The recording dot breathes.
             SequentialAnimation on opacity {
                 running: root.kind === "record"
                 loops: Animation.Infinite
@@ -215,8 +202,6 @@ Item {
         }
     }
 
-    // Progress along the bottom edge: filling for the timer, a sliding
-    // segment while a download's size is unknown.
     Item {
         visible: root.progress !== 0
         anchors.left: parent.left

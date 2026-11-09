@@ -4,9 +4,6 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import "../theme" as Palette
 
-// Desktop clock: the weekday in accent, a large time with an accent colon,
-// and the date. Same card and width as the weather widget, so the two stack
-// as a set.
 Item {
     id: root
 
@@ -19,20 +16,16 @@ Item {
     implicitHeight: mainColumn.implicitHeight + 28
     width: implicitWidth
     height: implicitHeight
-    // Size from Settings → Customize, grown from the top-left corner so the
-    // saved position stays put.
+
     scale: Palette.Theme.clockScale
     transformOrigin: Item.TopLeft
 
-    // Free-floating on the desktop layer (not laid out by a parent Layout),
-    // so position has to be set explicitly — falls back to the caller's
-    // default corner spot until the widget has been dragged at least once.
     x: widgetsService && widgetsService.hasPosition(widgetId) ? widgetsService.positionX(widgetId) : defaultX
     y: widgetsService && widgetsService.hasPosition(widgetId) ? widgetsService.positionY(widgetId) : defaultY
 
     SystemClock {
         id: clock
-        // Ticks every second only while seconds are shown.
+
         precision: Palette.Theme.clockSeconds ? SystemClock.Seconds : SystemClock.Minutes
     }
 
@@ -52,7 +45,7 @@ Item {
         id: card
         anchors.fill: parent
         radius: Palette.Theme.radiusLarge
-        // Same language as the rest of the shell: a light glassy surface with a hairline.
+
         color: Palette.Theme.widgetSurface
         border.width: 1
         border.color: Palette.Theme.outlineSoft
@@ -99,8 +92,6 @@ Item {
             }
         }
 
-        // Time (12- or 24-hour, from Settings → Widgets), with the seconds
-        // smaller beside it when enabled.
         RowLayout {
             Layout.topMargin: -4
             spacing: 6
@@ -142,9 +133,6 @@ Item {
         }
     }
 
-    // Drag-to-reposition — covers the whole widget. Position is persisted
-    // on release rather than on every move, to avoid hammering the state
-    // file.
     MouseArea {
         anchors.fill: parent
         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor

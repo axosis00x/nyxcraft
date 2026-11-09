@@ -1,22 +1,14 @@
 import QtQuick
 import "../../theme" as Palette
 
-// An audio spectrum drawn as rolling hills: one solid ridge traced as a
-// spline so every crest stays round. Feed `levels` (0..1 per band) at cava's frame
-// rate; the hills ease between frames at display rate and settle flat once
-// `levels` empties.
 Canvas {
     id: root
 
     property var levels: []
     property color tint: Palette.Theme.accent
-    // How far the drawn hills close the gap to cava's latest frame each
-    // display frame: rising fast (attack) and falling slower (release)
-    // makes beats punch up and settle smoothly.
     property real attack: 0.3
     property real release: 0.3
 
-    // Eased heights actually drawn.
     property var shown: []
 
     onLevelsChanged: animator.start()
@@ -24,9 +16,6 @@ Canvas {
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
 
-    // Light blur: folds a little of each band into its neighbours so a
-    // single loud band reads as a swell rather than a spike, while keeping
-    // enough of its peak to stay punchy.
     function soften(arr) {
         var n = arr.length;
         var out = [];
@@ -63,8 +52,6 @@ Canvas {
         }
     }
 
-    // Closed hill silhouette: a Catmull-Rom spline through every sample
-    // (as cubic Béziers), tapering into the baseline at both ends.
     function hills(ctx, values) {
         var pts = [0].concat(values).concat([0]);
         var n = pts.length;

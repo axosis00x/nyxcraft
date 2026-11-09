@@ -48,8 +48,7 @@ PanelWindow {
             item: dockPopups.menuVisible ? dockPopups.menuRect : null
             intersection: Intersection.Combine
         }
-        // A notification or live activity on the idle top notch takes
-        // clicks only where it is (no keyboard focus, see `active`).
+
         Region {
             item: root.peekPanel ? topStage : null
             intersection: Intersection.Combine
@@ -68,40 +67,22 @@ PanelWindow {
     property var settingsWindow: null
     readonly property bool verticalBar: barLayout ? barLayout.vertical : false
     readonly property bool active: (activeTopPanel !== null) || (activeBottomPanel !== null)
-    // How long a panel takes to shrink back to rest when it closes: a bit
-    // quicker than opening, between the theme's fast and default motion.
+
     readonly property int closeDuration: (Palette.Theme.motionFast + Palette.Theme.motionDefault) / 2
 
-    // The idle top notch shows a new notification, else a live activity (not
-    // in fullscreen). Neither counts as `active`.
     readonly property var peekPanel: activeTopPanel !== null ? null : (notificationPeek.wanted ? notificationPeek : (liveActivity.wanted && !fullscreenActive ? liveActivity : null))
 
-    // Central modules origin edge:
-    // Top origin: Control Center, Power Menu, Tool Menu, Media Panel, Polkit.
-    // Bottom origin: Launcher (shaders/sounds live inside it), Theme, Clipboard,
-    // Service Manager, Calendar, Bar Layout, Wallpaper Picker.
     function isTopModule(panel) {
-        return panel === controlCenterItem
-            || panel === powerMenuItem
-            || panel === toolMenuItem
-            || panel === mediaPanelItem
-            || panel === polkitItem;
+        return panel === controlCenterItem || panel === powerMenuItem || panel === toolMenuItem || panel === mediaPanelItem || panel === polkitItem;
     }
 
     property var currentTargetPanel: null
 
-    // Only the panel that last opened owns its stage. One that was just
-    // switched away from stays visible a moment longer while its StageSlot
-    // fades it out, but no longer holds the stage open.
     readonly property var activeTopPanel: currentTargetPanel && currentTargetPanel.visible && isTopModule(currentTargetPanel) ? currentTargetPanel : null
     readonly property var activeBottomPanel: currentTargetPanel && currentTargetPanel.visible && !isTopModule(currentTargetPanel) ? currentTargetPanel : null
 
-    // The dock is the bottom stage's resting state; it doesn't count as
-    // `active`. It auto-hides over windows (see dockAutoHide) and the
-    // bottom-edge strip reveals it.
     property bool dockRevealed: false
     readonly property bool dockCanShow: dockItem.wanted && activeBottomPanel === null
-    // Settings → Customize can keep it up even over busy workspaces.
     readonly property bool dockShown: dockCanShow && (!Palette.Theme.dockAutoHide || !dockItem.workspaceBusy || dockRevealed)
     readonly property bool dockAutoHidden: dockCanShow && !dockShown
     readonly property bool dockPointerInside: dockTrigger.hovered || dockItem.holdOpen
@@ -121,8 +102,6 @@ PanelWindow {
         onTriggered: root.dockRevealed = false
     }
 
-    // Thin hover strip along the bottom edge, only part of the input region
-    // while the dock is tucked away.
     Item {
         id: dockTrigger
 
@@ -138,7 +117,6 @@ PanelWindow {
         }
     }
 
-
     property alias launcher: launcherItem
     property alias controlCenter: controlCenterItem
     property alias powerMenu: powerMenuItem
@@ -152,10 +130,6 @@ PanelWindow {
     property alias wallpaperPicker: wallpaperPickerItem
     property alias themes: themeService
 
-    // All center-origin panels share this layer surface. Closing every other
-    // panel before a new one appears prevents stacked backdrops and focus.
-    // They close with their normal delay, not immediately, so their StageSlot
-    // can crossfade them into the new panel.
     function presentOnly(panel) {
         currentTargetPanel = panel;
         if (panel !== launcherItem && launcherItem.visible)
@@ -184,7 +158,6 @@ PanelWindow {
             polkitItem.close();
     }
 
-    // Closes the panel on screen, not one still fading out from a switch.
     function closeActive() {
         const panel = activeTopPanel || activeBottomPanel;
         if (panel === launcherItem)
@@ -229,27 +202,19 @@ PanelWindow {
         id: clipboardService
     }
 
-    // Invisible click-outside-to-close catcher. Sits below the notch so it
-    // never intercepts clicks meant for the panel's own content.
     MouseArea {
         anchors.fill: parent
         visible: root.active
         onClicked: root.closeActive()
     }
 
-    // The stage grows out of the bar's notch (the vertical bar has none,
-    // so it starts flat from the edge).
     readonly property real barSlabWidth: bar ? (bar.centerCapsuleSlabWidth || 120) : 120
     readonly property bool island: barLayout ? barLayout.island : false
-    // In island mode the bar's island is inset like the other bar capsules.
-    // Notch mode takes the frame's band off the top (the notch hangs below it).
+
     readonly property real barSlabHeight: root.verticalBar ? 0 : (bar ? bar.height - (root.island ? bar.islandGap : Palette.Theme.screenFrameBorder) : 34)
 
-    // In notch mode the stages grow out of the screen frame; fullscreen apps
-    // cover the frame, so panels then hang from the screen edge.
     readonly property bool fullscreenActive: ToplevelManager.activeToplevel ? ToplevelManager.activeToplevel.fullscreen : false
     readonly property bool framed: barLayout ? (barLayout.loaded && !root.island && !fullscreenActive) : false
-    // Panels hang from the frame's inner edge, top and bottom.
     property real frameInset: framed ? Palette.Theme.screenFrameBorder : 0
     property real topFrameInset: framed ? Palette.Theme.screenFrameBorder : 0
     Behavior on topFrameInset {
@@ -258,13 +223,11 @@ PanelWindow {
     Behavior on frameInset {
         EffectMotion {}
     }
-    // One background for the central panels, the bar's notch and its
-    // capsules, framed or island.
+
     readonly property color stageColor: Palette.Theme.bg
     readonly property real stageTint: 0
     readonly property real stageWing: framed ? Palette.Theme.screenFrameRadius : 9
 
-    // ── TOP STAGE (Control Center, Power Menu, Tool Menu, Media Panel) ───
     Notch {
         id: topStage
         anchors.horizontalCenter: parent.horizontalCenter
@@ -274,10 +237,7 @@ PanelWindow {
         island: root.island
         islandGap: bar ? bar.islandGap : 4
         wingSize: root.stageWing
-        // Full panels get roomy corners; at rest and as the slim live
-        // activity pill it keeps the bar notch's own radius, so the pill
-        // doesn't look rounded at the bottom and closing hands back
-        // seamlessly.
+
         slabRadius: sized === null || sized === liveActivity ? (root.bar ? root.bar.capsuleRadius : Palette.Theme.radiusSmall) : Palette.Theme.radiusLarge
         color: root.stageColor
         tintOpacity: root.stageTint
@@ -294,12 +254,9 @@ PanelWindow {
 
         readonly property var panel: root.activeTopPanel || root.peekPanel
 
-        // The slab follows `sized`, set in onPanelChanged after `shrinking`,
-        // so the size animation always knows whether it's a close.
         property var sized: null
         property bool shrinking: false
-        // A close is going back to rest: nothing, or a notification / live
-        // activity pill after a real panel.
+
         onPanelChanged: {
             shrinking = panel === null || (panel === root.peekPanel && sized !== null && sized !== root.peekPanel && sized !== notificationPeek && sized !== liveActivity);
             settling = panel === null && sized !== null;
@@ -308,13 +265,8 @@ PanelWindow {
         }
         Component.onCompleted: sized = panel
 
-        // The live activity can be narrower than the bar notch. Keep its
-        // backing slab wide enough to cover the notch beneath it, otherwise
-        // the center module's icon and title peek out at the sides.
         slabWidth: sized === liveActivity ? Math.max(liveActivity.implicitWidth, root.barSlabWidth) : (sized ? sized.implicitWidth : root.barSlabWidth)
         slabHeight: sized ? sized.implicitHeight : root.barSlabHeight
-        // Closing, the slab stays opaque while it shrinks into the notch, then
-        // fades; only after a real close (title changes resize the idle notch).
         property bool settling: false
         opacity: panel || settling ? 1 : 0
 
@@ -324,8 +276,6 @@ PanelWindow {
             onTriggered: topStage.settling = false
         }
 
-        // Ignore the startup flip of the bar's edge (no wobble). Opening
-        // springs; closing eases in, so it doesn't overshoot the notch.
         Behavior on slabWidth {
             enabled: !root.barLayout || root.barLayout.loaded
             SpatialMotion {
@@ -398,7 +348,6 @@ PanelWindow {
         when: root.bar !== null
     }
 
-    // ── BOTTOM STAGE (Launcher, Wallpapers, Themes, Clipboard, etc.) ──
     Notch {
         id: bottomStage
         anchors.horizontalCenter: parent.horizontalCenter
@@ -418,8 +367,6 @@ PanelWindow {
 
         readonly property var panel: root.activeBottomPanel ? root.activeBottomPanel : (root.dockShown ? dockItem : null)
 
-        // As on the top stage: `shrinking` is set before the size changes.
-        // Going back to rest (the dock, or nothing) is a close.
         property var sized: null
         property bool shrinking: false
         onPanelChanged: {
@@ -432,8 +379,6 @@ PanelWindow {
 
         slabWidth: sized ? sized.implicitWidth : 120
         slabHeight: sized ? sized.implicitHeight : 0
-        // As on the top stage: with the dock tucked away, a closing panel
-        // collapses into the bottom edge before the slab fades.
         property bool settling: false
         opacity: panel || settling ? 1 : 0
 
@@ -461,7 +406,7 @@ PanelWindow {
 
         Dock {
             id: dockItem
-            // Stays up while its slot fades it out under the next panel.
+
             visible: bottomStage.panel === dockItem || dockSlot.reveal > 0
             maxWidth: root.width
             widgetsService: root.widgetsService
@@ -527,22 +472,75 @@ PanelWindow {
         }
     }
 
-    // Size, position and switch motion for every panel (see StageSlot.qml).
-    StageSlot { panel: controlCenterItem; stage: topStage }
-    StageSlot { panel: powerMenuItem; stage: topStage }
-    StageSlot { panel: toolMenuItem; stage: topStage }
-    StageSlot { panel: mediaPanelItem; stage: topStage }
-    StageSlot { panel: polkitItem; stage: topStage }
-    StageSlot { panel: notificationPeek; stage: topStage }
-    StageSlot { panel: liveActivity; stage: topStage }
-    StageSlot { id: dockSlot; panel: dockItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: launcherItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: themePickerItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: clipboardItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: serviceManagerItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: calendarPickerItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: barLayoutPickerItem; stage: bottomStage; fromBottom: true }
-    StageSlot { panel: wallpaperPickerItem; stage: bottomStage; fromBottom: true }
+    StageSlot {
+        panel: controlCenterItem
+        stage: topStage
+    }
+    StageSlot {
+        panel: powerMenuItem
+        stage: topStage
+    }
+    StageSlot {
+        panel: toolMenuItem
+        stage: topStage
+    }
+    StageSlot {
+        panel: mediaPanelItem
+        stage: topStage
+    }
+    StageSlot {
+        panel: polkitItem
+        stage: topStage
+    }
+    StageSlot {
+        panel: notificationPeek
+        stage: topStage
+    }
+    StageSlot {
+        panel: liveActivity
+        stage: topStage
+    }
+    StageSlot {
+        id: dockSlot
+        panel: dockItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: launcherItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: themePickerItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: clipboardItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: serviceManagerItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: calendarPickerItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: barLayoutPickerItem
+        stage: bottomStage
+        fromBottom: true
+    }
+    StageSlot {
+        panel: wallpaperPickerItem
+        stage: bottomStage
+        fromBottom: true
+    }
 
     DockPopups {
         id: dockPopups
@@ -551,50 +549,74 @@ PanelWindow {
 
     Connections {
         target: launcherItem
-        function onAboutToOpen() { root.presentOnly(launcherItem); }
+        function onAboutToOpen() {
+            root.presentOnly(launcherItem);
+        }
     }
     Connections {
         target: controlCenterItem
-        function onAboutToOpen() { root.presentOnly(controlCenterItem); }
+        function onAboutToOpen() {
+            root.presentOnly(controlCenterItem);
+        }
     }
     Connections {
         target: powerMenuItem
-        function onAboutToOpen() { root.presentOnly(powerMenuItem); }
+        function onAboutToOpen() {
+            root.presentOnly(powerMenuItem);
+        }
     }
     Connections {
         target: themePickerItem
-        function onAboutToOpen() { root.presentOnly(themePickerItem); }
+        function onAboutToOpen() {
+            root.presentOnly(themePickerItem);
+        }
     }
     Connections {
         target: clipboardItem
-        function onAboutToOpen() { root.presentOnly(clipboardItem); }
+        function onAboutToOpen() {
+            root.presentOnly(clipboardItem);
+        }
     }
     Connections {
         target: serviceManagerItem
-        function onAboutToOpen() { root.presentOnly(serviceManagerItem); }
+        function onAboutToOpen() {
+            root.presentOnly(serviceManagerItem);
+        }
     }
     Connections {
         target: mediaPanelItem
-        function onAboutToOpen() { root.presentOnly(mediaPanelItem); }
+        function onAboutToOpen() {
+            root.presentOnly(mediaPanelItem);
+        }
     }
     Connections {
         target: toolMenuItem
-        function onAboutToOpen() { root.presentOnly(toolMenuItem); }
+        function onAboutToOpen() {
+            root.presentOnly(toolMenuItem);
+        }
     }
     Connections {
         target: calendarPickerItem
-        function onAboutToOpen() { root.presentOnly(calendarPickerItem); }
+        function onAboutToOpen() {
+            root.presentOnly(calendarPickerItem);
+        }
     }
     Connections {
         target: barLayoutPickerItem
-        function onAboutToOpen() { root.presentOnly(barLayoutPickerItem); }
+        function onAboutToOpen() {
+            root.presentOnly(barLayoutPickerItem);
+        }
     }
     Connections {
         target: wallpaperPickerItem
-        function onAboutToOpen() { root.presentOnly(wallpaperPickerItem); }
+        function onAboutToOpen() {
+            root.presentOnly(wallpaperPickerItem);
+        }
     }
     Connections {
         target: polkitItem
-        function onAboutToOpen() { root.presentOnly(polkitItem); }
+        function onAboutToOpen() {
+            root.presentOnly(polkitItem);
+        }
     }
 }

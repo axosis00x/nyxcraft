@@ -9,8 +9,6 @@ import "../../services"
 import "../controlcenter"
 import "../../theme" as Palette
 
-// System settings as a normal floating window: a menu on the left, the
-// selected page on the right. Changes go through the control center's handlers.
 FloatingWindow {
     id: root
 
@@ -29,7 +27,6 @@ FloatingWindow {
 
     signal aboutToOpen
 
-    // Resolution, scale and mirroring (Display page).
     readonly property alias displayService: displayService
 
     DisplayService {
@@ -39,28 +36,23 @@ FloatingWindow {
     readonly property real cardWidth: 860
     readonly property real cardHeight: 560
 
-    // Matched by the Hyprland window rule.
     title: "nyxcraft-settings"
     visible: shown
     color: "transparent"
     implicitWidth: cardWidth
     implicitHeight: cardHeight
-    // Resizable (no fixed size), so Hyprland can tile it; Super+V toggles.
+
     minimumSize: Qt.size(640, 420)
 
-    // The window can also be closed by the compositor (e.g. SUPER+Q).
     onVisibleChanged: {
         if (!visible)
             shown = false;
     }
 
-    // So summaries (also shown by the launcher's /settings list) are filled
-    // in before the window is ever opened.
     Component.onCompleted: aboutProcess.running = true
 
     readonly property var pageIds: ["overview", "network", "display", "sound", "power", "themes", "appearance", "widgets", "about", "search"]
 
-    // ── open / close ────────────────────────────────────────────────
     IpcHandler {
         target: "settings"
         function toggle(): void {
@@ -83,9 +75,7 @@ FloatingWindow {
         query = "";
         aboutToOpen();
         shown = true;
-        // This FloatingWindow instance is kept alive while hidden. If the
-        // user tiled it before closing, the map rule will not run again, so
-        // explicitly restore its floating state after Hyprland maps it.
+
         restoreFloatingTimer.restart();
         if (controlCenter)
             controlCenter.refreshAll();
@@ -123,7 +113,6 @@ FloatingWindow {
         searchInput.text = "";
     }
 
-    // Up/Down step through the sidebar pages (wrapping); clears any search.
     function stepPage(delta) {
         var i = 0;
         for (var k = 0; k < categories.length; k++) {
@@ -134,7 +123,6 @@ FloatingWindow {
         page = categories[(i + delta + categories.length) % categories.length].id;
     }
 
-    // Escape peels back one layer: search text first, then the window.
     function back() {
         if (searchInput.text !== "")
             searchInput.text = "";
@@ -142,7 +130,6 @@ FloatingWindow {
             close();
     }
 
-    // ── live state (all delegated to the control center) ────────────
     function flag(key) {
         var c = controlCenter;
         if (key === "dockautohide")
@@ -183,13 +170,9 @@ FloatingWindow {
         }
     }
 
-    // ── confirmations ───────────────────────────────────────────────
-    // Layout changes (customization sliders, bar style) apply as a preview
-    // and a bar asks to Save or Cancel. Toggles and system settings (Wi-Fi,
-    // volume, night light...) apply directly, with no prompt.
     readonly property var confirmLevels: ["roundness", "dockicons", "ccwidth", "clocksize", "weathersize", "cavasize"]
     readonly property var confirmChoices: ["barstyle"]
-    // Switch rows backed by ShellSettings → their keys.
+
     readonly property var shellFlagKey: ({
             dockautohide: "dockAutoHide",
             glyph: "showGlyph",
@@ -201,9 +184,9 @@ FloatingWindow {
             weathersize: "weatherScale",
             cavasize: "cavaScale"
         })
-    property var pending: ({}) // key -> { kind, original }
+    property var pending: ({})
     readonly property int pendingCount: Object.keys(pending).length
-    // A question with its own confirm button (e.g. Reset), or a short note.
+
     property string promptText: ""
     property string promptAction: ""
     property var promptCallback: null
@@ -213,7 +196,10 @@ FloatingWindow {
         if (pending[key] !== undefined)
             return;
         var next = Object.assign({}, pending);
-        next[key] = { kind: kind, original: original };
+        next[key] = {
+            kind: kind,
+            original: original
+        };
         pending = next;
     }
 
@@ -266,7 +252,6 @@ FloatingWindow {
         return null;
     }
 
-    // "Island mode on", "Bar style: Compact", "Corner radius 13 px".
     function describe(key) {
         var row = rowFor(key);
         var title = row ? row.title : key;
@@ -390,7 +375,6 @@ FloatingWindow {
         case "cavasize":
             return shellSettings ? (shellSettings.get(widgetScaleKey[key]) - 0.8) / 0.6 : 1 / 3;
         case "nightwarmth":
-            // 4500 K (barely warm) .. 1900 K (very warm), warmer to the right.
             return (4500 - c.nightTemperature) / 2600;
         case "nightgamma":
             return (c.nightGamma - 50) / 50;
@@ -399,7 +383,6 @@ FloatingWindow {
         }
     }
 
-    // A typed value (e.g. "480 px", "2800 K", "80%") for a slider, in its own unit.
     function enterLevel(key, text) {
         var n = parseFloat(String(text).replace(",", "."));
         if (isNaN(n))
@@ -418,8 +401,6 @@ FloatingWindow {
             setLevel(key, Math.max(0, Math.min(1, v)));
     }
 
-    // Where a slider's default sits on its track (0–1), shown as a tick;
-    // -1 for none.
     function levelDefault(key) {
         switch (key) {
         case "roundness":
@@ -441,7 +422,6 @@ FloatingWindow {
         }
     }
 
-    // A slider's label when a percentage of its track isn't the real value.
     function levelText(key) {
         var c = controlCenter;
         if (shellSettings) {
@@ -511,8 +491,6 @@ FloatingWindow {
             barLayout.setStyle(id);
     }
 
-    // Battery comes straight from sysfs (same source as the bar) — UPower
-    // isn't running on this system.
     readonly property int batteryPercent: about.battery !== undefined && about.battery !== "" ? parseInt(about.battery) : -1
     readonly property bool batteryCharging: about.batstatus === "Charging"
 
@@ -526,7 +504,6 @@ FloatingWindow {
         return Math.round(v * 100) + "%";
     }
 
-    // Short live summaries shown under each category on the home list.
     function subtitleFor(key) {
         var c = controlCenter;
         switch (key) {
@@ -573,17 +550,12 @@ FloatingWindow {
         }
     }
 
-    // Live CPU, memory, disk and temperature for the gauges on the power
-    // page; polls only while that page is on screen.
     SystemStats {
         id: systemStats
         running: root.shown && root.page === "power"
     }
     property alias stats: systemStats
 
-    // ── system usage ────────────────────────────────────────────────
-    // CPU is the busy share of jiffies between two /proc/stat samples; RAM
-    // is MemTotal minus MemAvailable. Sampled only while the window is open.
     property real cpuUsage: 0
     property real memUsage: 0
     property real memTotalKb: 0
@@ -617,7 +589,10 @@ FloatingWindow {
                         var prev = root.cpuPrev;
                         if (prev && total > prev.total)
                             root.cpuUsage = 1 - (idle - prev.idle) / (total - prev.total);
-                        root.cpuPrev = { idle: idle, total: total };
+                        root.cpuPrev = {
+                            idle: idle,
+                            total: total
+                        };
                     } else if (f[0] === "MemTotal:") {
                         root.memTotalKb = Number(f[1]);
                     } else if (f[0] === "MemAvailable:") {
@@ -649,7 +624,6 @@ FloatingWindow {
     }
 
     function activate(spec) {
-        // A search hit for an inline gallery jumps to the page that holds it.
         if (spec.page) {
             searchInput.text = "";
             page = spec.page;
@@ -674,17 +648,61 @@ FloatingWindow {
             c.openWiremix();
     }
 
-    // ── content ─────────────────────────────────────────────────────
     readonly property var categories: [
-        { id: "overview", icon: "", title: "Overview", sub: "overview" },
-        { id: "themes", icon: "", title: "Themes", sub: "themes" },
-        { id: "appearance", icon: "tune", title: "Appearance", sub: "appearance" },
-        { id: "widgets", icon: "widgets", title: "Widgets", sub: "widgets" },
-        { id: "network", icon: "", title: "Network & internet", sub: "net" },
-        { id: "display", icon: "", title: "Display", sub: "display" },
-        { id: "sound", icon: "", title: "Sound", sub: "sound" },
-        { id: "power", icon: "", title: "Power & performance", sub: "power" },
-        { id: "about", icon: "", title: "About device", sub: "about" }
+        {
+            id: "overview",
+            icon: "",
+            title: "Overview",
+            sub: "overview"
+        },
+        {
+            id: "themes",
+            icon: "",
+            title: "Themes",
+            sub: "themes"
+        },
+        {
+            id: "appearance",
+            icon: "tune",
+            title: "Appearance",
+            sub: "appearance"
+        },
+        {
+            id: "widgets",
+            icon: "widgets",
+            title: "Widgets",
+            sub: "widgets"
+        },
+        {
+            id: "network",
+            icon: "",
+            title: "Network & internet",
+            sub: "net"
+        },
+        {
+            id: "display",
+            icon: "",
+            title: "Display",
+            sub: "display"
+        },
+        {
+            id: "sound",
+            icon: "",
+            title: "Sound",
+            sub: "sound"
+        },
+        {
+            id: "power",
+            icon: "",
+            title: "Power & performance",
+            sub: "power"
+        },
+        {
+            id: "about",
+            icon: "",
+            title: "About device",
+            sub: "about"
+        }
     ]
 
     readonly property var pageTitles: ({
@@ -718,20 +736,65 @@ FloatingWindow {
                     title: "Quick settings",
                     layout: "tiles",
                     rows: [
-                        { kind: "switch", key: "wifi", icon: "", title: "Wi-Fi" },
-                        { kind: "switch", key: "bluetooth", icon: "", title: "Bluetooth" },
-                        { kind: "switch", key: "dnd", icon: "", title: "Do not disturb" },
-                        { kind: "switch", key: "nightlight", icon: "", title: "Night light" },
-                        { kind: "switch", key: "keepawake", icon: "", title: "Keep awake" },
-                        { kind: "switch", key: "dock", icon: "", title: "Dock" }
+                        {
+                            kind: "switch",
+                            key: "wifi",
+                            icon: "",
+                            title: "Wi-Fi"
+                        },
+                        {
+                            kind: "switch",
+                            key: "bluetooth",
+                            icon: "",
+                            title: "Bluetooth"
+                        },
+                        {
+                            kind: "switch",
+                            key: "dnd",
+                            icon: "",
+                            title: "Do not disturb"
+                        },
+                        {
+                            kind: "switch",
+                            key: "nightlight",
+                            icon: "",
+                            title: "Night light"
+                        },
+                        {
+                            kind: "switch",
+                            key: "keepawake",
+                            icon: "",
+                            title: "Keep awake"
+                        },
+                        {
+                            kind: "switch",
+                            key: "dock",
+                            icon: "",
+                            title: "Dock"
+                        }
                     ]
                 },
                 {
                     title: "Levels",
                     rows: [
-                        { kind: "slider", key: "brightness", icon: "", title: "Brightness" },
-                        { kind: "slider", key: "volume", icon: "", title: "Volume" },
-                        { kind: "slider", key: "mic", icon: "", title: "Microphone" }
+                        {
+                            kind: "slider",
+                            key: "brightness",
+                            icon: "",
+                            title: "Brightness"
+                        },
+                        {
+                            kind: "slider",
+                            key: "volume",
+                            icon: "",
+                            title: "Volume"
+                        },
+                        {
+                            kind: "slider",
+                            key: "mic",
+                            icon: "",
+                            title: "Microphone"
+                        }
                     ]
                 }
             ],
@@ -739,9 +802,25 @@ FloatingWindow {
                 {
                     title: "Connections",
                     rows: [
-                        { kind: "switch", key: "wifi", icon: "", title: "Wi-Fi" },
-                        { kind: "switch", key: "bluetooth", icon: "", title: "Bluetooth" },
-                        { kind: "switch", key: "airplane", icon: "", title: "Airplane mode", subtitle: "Turns off Wi-Fi and Bluetooth" }
+                        {
+                            kind: "switch",
+                            key: "wifi",
+                            icon: "",
+                            title: "Wi-Fi"
+                        },
+                        {
+                            kind: "switch",
+                            key: "bluetooth",
+                            icon: "",
+                            title: "Bluetooth"
+                        },
+                        {
+                            kind: "switch",
+                            key: "airplane",
+                            icon: "",
+                            title: "Airplane mode",
+                            subtitle: "Turns off Wi-Fi and Bluetooth"
+                        }
                     ]
                 }
             ],
@@ -749,24 +828,63 @@ FloatingWindow {
                 {
                     title: "Brightness",
                     rows: [
-                        { kind: "slider", key: "brightness", icon: "", title: "Brightness level" },
-                        { kind: "switch", key: "nightlight", icon: "", title: "Night light", subtitle: "Warmer colors at night" },
-                        { kind: "slider", key: "nightwarmth", icon: "thermostat", title: "Night light warmth" },
-                        { kind: "slider", key: "nightgamma", icon: "contrast", title: "Night light gamma" }
+                        {
+                            kind: "slider",
+                            key: "brightness",
+                            icon: "",
+                            title: "Brightness level"
+                        },
+                        {
+                            kind: "switch",
+                            key: "nightlight",
+                            icon: "",
+                            title: "Night light",
+                            subtitle: "Warmer colors at night"
+                        },
+                        {
+                            kind: "slider",
+                            key: "nightwarmth",
+                            icon: "thermostat",
+                            title: "Night light warmth"
+                        },
+                        {
+                            kind: "slider",
+                            key: "nightgamma",
+                            icon: "contrast",
+                            title: "Night light gamma"
+                        }
                     ]
                 },
                 {
                     title: "Displays",
                     layout: "displays",
                     rows: [
-                        { kind: "nav", page: "display", icon: "monitor", title: "Resolution", subtitle: "Screen resolution and refresh rate" },
-                        { kind: "nav", page: "display", icon: "zoom_in", title: "Display scale", subtitle: "Make everything bigger or smaller" }
+                        {
+                            kind: "nav",
+                            page: "display",
+                            icon: "monitor",
+                            title: "Resolution",
+                            subtitle: "Screen resolution and refresh rate"
+                        },
+                        {
+                            kind: "nav",
+                            page: "display",
+                            icon: "zoom_in",
+                            title: "Display scale",
+                            subtitle: "Make everything bigger or smaller"
+                        }
                     ]
                 },
                 {
                     title: "Multiple displays",
                     rows: [
-                        { kind: "switch", key: "mirror", icon: "screen_share", title: "Mirror displays", sub: "mirror" }
+                        {
+                            kind: "switch",
+                            key: "mirror",
+                            icon: "screen_share",
+                            title: "Mirror displays",
+                            sub: "mirror"
+                        }
                     ]
                 }
             ],
@@ -774,21 +892,47 @@ FloatingWindow {
                 {
                     title: "Volume",
                     rows: [
-                        { kind: "slider", key: "volume", icon: "", title: "Media volume" },
-                        { kind: "switch", key: "mute", icon: "", title: "Mute" }
+                        {
+                            kind: "slider",
+                            key: "volume",
+                            icon: "",
+                            title: "Media volume"
+                        },
+                        {
+                            kind: "switch",
+                            key: "mute",
+                            icon: "",
+                            title: "Mute"
+                        }
                     ]
                 },
                 {
                     title: "Microphone",
                     rows: [
-                        { kind: "slider", key: "mic", icon: "", title: "Microphone level" },
-                        { kind: "switch", key: "micmute", icon: "", title: "Mute microphone" }
+                        {
+                            kind: "slider",
+                            key: "mic",
+                            icon: "",
+                            title: "Microphone level"
+                        },
+                        {
+                            kind: "switch",
+                            key: "micmute",
+                            icon: "",
+                            title: "Mute microphone"
+                        }
                     ]
                 },
                 {
                     title: "",
                     rows: [
-                        { kind: "nav", act: "mixer", icon: "", title: "Audio mixer", subtitle: "Open per-app volume controls" }
+                        {
+                            kind: "nav",
+                            act: "mixer",
+                            icon: "",
+                            title: "Audio mixer",
+                            subtitle: "Open per-app volume controls"
+                        }
                     ]
                 }
             ],
@@ -797,11 +941,22 @@ FloatingWindow {
                     title: "Power mode",
                     rows: [
                         {
-                            kind: "segment", key: "powerprofile", title: "Performance profile",
+                            kind: "segment",
+                            key: "powerprofile",
+                            title: "Performance profile",
                             options: [
-                                { id: "power-saver", label: "Saver" },
-                                { id: "balanced", label: "Balanced" },
-                                { id: "performance", label: "Performance" }
+                                {
+                                    id: "power-saver",
+                                    label: "Saver"
+                                },
+                                {
+                                    id: "balanced",
+                                    label: "Balanced"
+                                },
+                                {
+                                    id: "performance",
+                                    label: "Performance"
+                                }
                             ]
                         }
                     ]
@@ -809,18 +964,49 @@ FloatingWindow {
                 {
                     title: "Battery",
                     rows: [
-                        { kind: "info", key: "battery", icon: "", title: "Battery level" },
-                        { kind: "switch", key: "keepawake", icon: "", title: "Keep screen awake", subtitle: "Prevent the screen from locking or sleeping" }
+                        {
+                            kind: "info",
+                            key: "battery",
+                            icon: "",
+                            title: "Battery level"
+                        },
+                        {
+                            kind: "switch",
+                            key: "keepawake",
+                            icon: "",
+                            title: "Keep screen awake",
+                            subtitle: "Prevent the screen from locking or sleeping"
+                        }
                     ]
                 },
                 {
                     title: "System usage",
                     layout: "usage",
                     rows: [
-                        { kind: "nav", page: "power", icon: "memory", title: "CPU usage" },
-                        { kind: "nav", page: "power", icon: "memory_alt", title: "Memory usage" },
-                        { kind: "nav", page: "power", icon: "hard_drive", title: "Disk usage" },
-                        { kind: "nav", page: "power", icon: "thermostat", title: "Temperature" }
+                        {
+                            kind: "nav",
+                            page: "power",
+                            icon: "memory",
+                            title: "CPU usage"
+                        },
+                        {
+                            kind: "nav",
+                            page: "power",
+                            icon: "memory_alt",
+                            title: "Memory usage"
+                        },
+                        {
+                            kind: "nav",
+                            page: "power",
+                            icon: "hard_drive",
+                            title: "Disk usage"
+                        },
+                        {
+                            kind: "nav",
+                            page: "power",
+                            icon: "thermostat",
+                            title: "Temperature"
+                        }
                     ]
                 }
             ],
@@ -829,41 +1015,98 @@ FloatingWindow {
                     title: "Layout",
                     rows: [
                         {
-                            kind: "segment", key: "barstyle", title: "Bar style",
+                            kind: "segment",
+                            key: "barstyle",
+                            title: "Bar style",
                             options: [
-                                { id: "top", label: "Top" },
-                                { id: "compact", label: "Compact" },
-                                { id: "left", label: "Left" }
+                                {
+                                    id: "top",
+                                    label: "Top"
+                                },
+                                {
+                                    id: "compact",
+                                    label: "Compact"
+                                },
+                                {
+                                    id: "left",
+                                    label: "Left"
+                                }
                             ]
                         },
-                        { kind: "switch", key: "island", icon: "rounded_corner", title: "Island mode", subtitle: "Float the notch and its panels as rounded islands" }
+                        {
+                            kind: "switch",
+                            key: "island",
+                            icon: "rounded_corner",
+                            title: "Island mode",
+                            subtitle: "Float the notch and its panels as rounded islands"
+                        }
                     ]
                 },
                 {
                     title: "Shape",
                     rows: [
-                        { kind: "slider", key: "roundness", icon: "rounded_corner", title: "Corner roundness" }
+                        {
+                            kind: "slider",
+                            key: "roundness",
+                            icon: "rounded_corner",
+                            title: "Corner roundness"
+                        }
                     ]
                 },
                 {
                     title: "Control center",
                     rows: [
-                        { kind: "slider", key: "ccwidth", icon: "width", title: "Control center width" },
-                        { kind: "switch", key: "glyph", icon: "grid_view", title: "Glyph matrix", subtitle: "The animated dot display in Controls" }
+                        {
+                            kind: "slider",
+                            key: "ccwidth",
+                            icon: "width",
+                            title: "Control center width"
+                        },
+                        {
+                            kind: "switch",
+                            key: "glyph",
+                            icon: "grid_view",
+                            title: "Glyph matrix",
+                            subtitle: "The animated dot display in Controls"
+                        }
                     ]
                 },
                 {
                     title: "Dock",
                     rows: [
-                        { kind: "switch", key: "dock", icon: "", title: "Show dock", subtitle: "App dock at the bottom of the screen" },
-                        { kind: "switch", key: "dockautohide", icon: "visibility_off", title: "Hide over open windows", subtitle: "Reveal it from the bottom edge" },
-                        { kind: "slider", key: "dockicons", icon: "apps", title: "Dock icon size" }
+                        {
+                            kind: "switch",
+                            key: "dock",
+                            icon: "",
+                            title: "Show dock",
+                            subtitle: "App dock at the bottom of the screen"
+                        },
+                        {
+                            kind: "switch",
+                            key: "dockautohide",
+                            icon: "visibility_off",
+                            title: "Hide over open windows",
+                            subtitle: "Reveal it from the bottom edge"
+                        },
+                        {
+                            kind: "slider",
+                            key: "dockicons",
+                            icon: "apps",
+                            title: "Dock icon size"
+                        }
                     ]
                 },
                 {
                     title: "",
                     rows: [
-                        { kind: "nav", act: "resetcustom", icon: "restart_alt", title: "Restore layout defaults", subtitle: "Reset corners, dock, control center and widget sizes", dangerous: true }
+                        {
+                            kind: "nav",
+                            act: "resetcustom",
+                            icon: "restart_alt",
+                            title: "Restore layout defaults",
+                            subtitle: "Reset corners, dock, control center and widget sizes",
+                            dangerous: true
+                        }
                     ]
                 }
             ],
@@ -871,15 +1114,62 @@ FloatingWindow {
                 {
                     title: "Desktop widgets",
                     rows: [
-                        { kind: "switch", key: "clock", icon: "schedule", title: "Clock widget" },
-                        { kind: "switch", key: "clockseconds", icon: "timer", title: "Show seconds" },
-                        { kind: "switch", key: "clock24h", icon: "schedule", title: "24-hour time" },
-                        { kind: "slider", key: "clocksize", icon: "schedule", title: "Clock size" },
-                        { kind: "switch", key: "weather", icon: "partly_cloudy_day", title: "Weather widget" },
-                        { kind: "slider", key: "weathersize", icon: "partly_cloudy_day", title: "Weather size" },
-                        { kind: "switch", key: "cava", icon: "graphic_eq", title: "Audio wave widget", subtitle: "Visualizes whatever is playing" },
-                        { kind: "switch", key: "bongo", icon: "pets", title: "Bongo Cat in bar", subtitle: "Show the animated cat before the battery" },
-                        { kind: "slider", key: "cavasize", icon: "graphic_eq", title: "Audio wave size" }
+                        {
+                            kind: "switch",
+                            key: "clock",
+                            icon: "schedule",
+                            title: "Clock widget"
+                        },
+                        {
+                            kind: "switch",
+                            key: "clockseconds",
+                            icon: "timer",
+                            title: "Show seconds"
+                        },
+                        {
+                            kind: "switch",
+                            key: "clock24h",
+                            icon: "schedule",
+                            title: "24-hour time"
+                        },
+                        {
+                            kind: "slider",
+                            key: "clocksize",
+                            icon: "schedule",
+                            title: "Clock size"
+                        },
+                        {
+                            kind: "switch",
+                            key: "weather",
+                            icon: "partly_cloudy_day",
+                            title: "Weather widget"
+                        },
+                        {
+                            kind: "slider",
+                            key: "weathersize",
+                            icon: "partly_cloudy_day",
+                            title: "Weather size"
+                        },
+                        {
+                            kind: "switch",
+                            key: "cava",
+                            icon: "graphic_eq",
+                            title: "Audio wave widget",
+                            subtitle: "Visualizes whatever is playing"
+                        },
+                        {
+                            kind: "switch",
+                            key: "bongo",
+                            icon: "pets",
+                            title: "Bongo Cat in bar",
+                            subtitle: "Show the animated cat before the battery"
+                        },
+                        {
+                            kind: "slider",
+                            key: "cavasize",
+                            icon: "graphic_eq",
+                            title: "Audio wave size"
+                        }
                     ]
                 }
             ],
@@ -888,14 +1178,26 @@ FloatingWindow {
                     title: "Theme",
                     layout: "themes",
                     rows: [
-                        { kind: "nav", page: "themes", icon: "", title: "Theme", subtitle: "Color theme for the whole desktop" }
+                        {
+                            kind: "nav",
+                            page: "themes",
+                            icon: "",
+                            title: "Theme",
+                            subtitle: "Color theme for the whole desktop"
+                        }
                     ]
                 },
                 {
                     title: "Wallpaper",
                     layout: "wallpapers",
                     rows: [
-                        { kind: "nav", page: "themes", icon: "", title: "Wallpaper", subtitle: "Pick a wallpaper for this theme" }
+                        {
+                            kind: "nav",
+                            page: "themes",
+                            icon: "",
+                            title: "Wallpaper",
+                            subtitle: "Pick a wallpaper for this theme"
+                        }
                     ]
                 }
             ],
@@ -903,18 +1205,54 @@ FloatingWindow {
                 {
                     title: "Profile",
                     rows: [
-                        { kind: "nav", act: "pfp", icon: "account_circle", title: "Profile picture", subtitle: "Shown here, on the lock screen and at login" },
-                        { kind: "nav", act: "pfpreset", icon: "restart_alt", title: "Use the default picture" }
+                        {
+                            kind: "nav",
+                            act: "pfp",
+                            icon: "account_circle",
+                            title: "Profile picture",
+                            subtitle: "Shown here, on the lock screen and at login"
+                        },
+                        {
+                            kind: "nav",
+                            act: "pfpreset",
+                            icon: "restart_alt",
+                            title: "Use the default picture"
+                        }
                     ]
                 },
                 {
                     title: "Device",
                     rows: [
-                        { kind: "info", key: "host", icon: "", title: "Device name" },
-                        { kind: "info", key: "user", icon: "", title: "User" },
-                        { kind: "info", key: "os", icon: "", title: "Operating system" },
-                        { kind: "info", key: "kernel", icon: "", title: "Kernel" },
-                        { kind: "info", key: "uptime", icon: "", title: "Uptime" }
+                        {
+                            kind: "info",
+                            key: "host",
+                            icon: "",
+                            title: "Device name"
+                        },
+                        {
+                            kind: "info",
+                            key: "user",
+                            icon: "",
+                            title: "User"
+                        },
+                        {
+                            kind: "info",
+                            key: "os",
+                            icon: "",
+                            title: "Operating system"
+                        },
+                        {
+                            kind: "info",
+                            key: "kernel",
+                            icon: "",
+                            title: "Kernel"
+                        },
+                        {
+                            kind: "info",
+                            key: "uptime",
+                            icon: "",
+                            title: "Uptime"
+                        }
                     ]
                 }
             ]
@@ -926,18 +1264,24 @@ FloatingWindow {
         var q = query.trim().toLowerCase();
         var hits = [];
         for (var p in pageSections) {
-            // The overview only repeats other pages' rows.
             if (p === "overview")
                 continue;
             pageSections[p].forEach(sec => sec.rows.forEach(r => {
-                if (r.title.toLowerCase().indexOf(q) !== -1 || (r.subtitle || "").toLowerCase().indexOf(q) !== -1)
-                    hits.push(Object.assign({}, r, { sub: undefined, subtitle: pageTitles[p] }));
-            }));
+                    if (r.title.toLowerCase().indexOf(q) !== -1 || (r.subtitle || "").toLowerCase().indexOf(q) !== -1)
+                        hits.push(Object.assign({}, r, {
+                            sub: undefined,
+                            subtitle: pageTitles[p]
+                        }));
+                }));
         }
-        return hits.length ? [{ title: "Results", rows: hits }] : [];
+        return hits.length ? [
+            {
+                title: "Results",
+                rows: hits
+            }
+        ] : [];
     }
 
-    // ── layout ──────────────────────────────────────────────────────
     Item {
         id: card
 
@@ -957,15 +1301,10 @@ FloatingWindow {
             event.accepted = true;
         }
 
-        // The theme's own background, so translucent themes stay translucent
-        // here too; Hyprland blurs what's behind (see windowrules.lua), which
-        // keeps the text readable.
         Rectangle {
             id: cardBg
             anchors.fill: parent
-            // Same panel corner as the shell's notch/island panels; no
-            // outline — like the rest of the shell, it separates by tone.
-            // Square: Hyprland rounds the window (its decoration rounding).
+
             radius: 0
             color: Palette.Theme.bg
         }
@@ -975,7 +1314,6 @@ FloatingWindow {
             anchors.margins: 1
             spacing: 0
 
-            // ── left: profile, search, menu ─────────────────────────
             ColumnLayout {
                 Layout.preferredWidth: 224
                 Layout.maximumWidth: 224
@@ -990,7 +1328,6 @@ FloatingWindow {
                     Layout.leftMargin: 6
                     spacing: 10
 
-                    // Click to choose a new picture (scripts/pfp.sh).
                     Avatar {
                         Layout.preferredWidth: 34
                         Layout.preferredHeight: 34
@@ -1027,7 +1364,9 @@ FloatingWindow {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.activate({ act: "pfp" })
+                            onClicked: root.activate({
+                                act: "pfp"
+                            })
                         }
                     }
 
@@ -1124,9 +1463,6 @@ FloatingWindow {
                     }
                 }
 
-                // The selection is one tonal pill that glides between
-                // entries rather than each entry filling itself in.
-                // Scrolls when the entries don't fit (short or tiled windows).
                 Flickable {
                     id: navScroll
                     Layout.fillWidth: true
@@ -1149,8 +1485,7 @@ FloatingWindow {
                         target: {
                             if (navRepeater.count === 0)
                                 return null;
-                            // Like the launcher: follow the hovered entry,
-                            // else rest on the open page.
+
                             for (var h = 0; h < navRepeater.count; h++) {
                                 var item = navRepeater.itemAt(h);
                                 if (item && item.hovered)
@@ -1201,10 +1536,8 @@ FloatingWindow {
                         }
                     }
                 }
-
             }
 
-            // ── right: page header + content ────────────────────────
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -1298,8 +1631,7 @@ FloatingWindow {
                 }
             }
         }
-        // Save / Cancel bar for unsaved changes (or a prompt like Reset).
-        // Its shape follows the corner roundness setting.
+
         Rectangle {
             id: notice
             readonly property bool asking: root.promptText !== ""
@@ -1378,7 +1710,6 @@ FloatingWindow {
         }
     }
 
-    // A notice bar button; its corners follow the roundness setting.
     component NoticeButton: Rectangle {
         id: button
         property string label: ""

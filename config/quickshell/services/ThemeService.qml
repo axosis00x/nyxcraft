@@ -8,10 +8,10 @@ Item {
     visible: false
 
     property var themes: []
-    // theme name -> { bg, surfaceContainerHigh, border, textPrimary, accent, info, success, warning, error }
+
     property var palettes: ({})
     property string activeTheme: ""
-    // Path of the wallpaper on screen, as awww last cached it.
+
     property string currentWallpaper: ""
     signal applied(string themeName)
 
@@ -29,9 +29,7 @@ Item {
 
     function setWallpaper(path) {
         currentWallpaper = path;
-        // The dynamic theme's whole palette is derived from its wallpaper,
-        // so picking a new one has to go through wallust (via apply-theme.sh)
-        // rather than just swapping the image.
+
         if (activeTheme === "dynamic") {
             apply("dynamic", path);
             return;
@@ -39,8 +37,6 @@ Item {
         setWallpaperProcess.exec(["awww", "img", path, "--transition-type", "any", "--transition-duration", "0.7", "--transition-fps", "60"]);
     }
 
-    // Five distinct colors to preview a theme by: its UI accents first, then
-    // its terminal colors to fill in wherever the UI palette repeats itself.
     function swatchesFor(themeName) {
         var pal = palettes[themeName];
         if (!pal)
@@ -82,11 +78,7 @@ Item {
         if (themes.indexOf(themeName) === -1)
             return;
         pendingTheme = themeName;
-        // Quickshell owns this singleton, so repaint it first with whatever
-        // palette is on disk. For static themes that's already correct; the
-        // "dynamic" theme rewrites its palette from the wallpaper on every
-        // apply, so it gets a second, authoritative read once the script
-        // below (and wallust within it) has actually finished.
+
         activeTheme = themeName;
         readPalette(themeName);
         applied(themeName);
@@ -172,12 +164,11 @@ Item {
         onExited: function (exitCode, exitStatus) {
             if (exitCode === 0 && root.pendingTheme !== "") {
                 root.activeTheme = root.pendingTheme;
-                // Re-read now that the script (and, for "dynamic", wallust)
-                // has finished writing the palette this apply used.
+
                 root.readPalette(root.activeTheme);
-                // The dynamic theme's colors were just rewritten.
+
                 root.readSwatches();
-                // A theme switch also swaps the wallpaper.
+
                 root.refreshWallpaper();
             }
             root.pendingTheme = "";

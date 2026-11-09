@@ -11,12 +11,9 @@ import "../../components/material"
 Scope {
     id: root
     property var expandedGroups: ({})
-    // Keep a local, immutable copy of each notification. Some web apps update a
-    // single notification id for every new message, which otherwise replaces the
-    // previous message in NotificationServer.trackedNotifications.
+
     property var notificationHistory: []
-    // Keep image://qsimage handles alive after the notification closes so the
-    // sender avatar remains available in the notification center.
+
     property var retainedNotificationLocks: ({})
     property int nextHistoryId: 0
 
@@ -40,8 +37,7 @@ Scope {
         var list = notificationHistory;
         var groups = [];
         var index = Object.create(null);
-        // notificationHistory is newest first, so keep the newest item at the
-        // front of every app group as well.
+
         for (var i = 0; i < list.length; i++) {
             var n = list[i];
             var key = n.appName || "Notifications";
@@ -67,51 +63,84 @@ Scope {
     readonly property int count: notifications.length
 
     function scrub(text) {
-        return String(text || "")
-            .replace(/<br\s*\/?\s*>/gi, "\n")
-            .replace(/<\/p\s*>/gi, "\n")
-            .replace(/<[^>]*>/g, "")
-            .replace(/&amp;/g, "&")
-            .replace(/&lt;/g, "<")
-            .replace(/&gt;/g, ">")
-            .replace(/&quot;/g, "\"")
-            .replace(/&#39;|&apos;/g, "'")
-            .replace(/&nbsp;/g, " ")
-            // Browsers often prepend the website origin to web-app
-            // notifications. It's source metadata, not the message body.
-            .replace(/^[ \t]*(?:(?:https?:\/\/)?(?:www\.)?[\w-]+(?:\.[\w-]+)+(?:\/[^\s]*)?)[ \t]*$/gim, "")
-            .replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n")
-            .replace(/^[ \t\n]+|[ \t\n]+$/g, "");
+        return String(text || "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<\/p\s*>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, " ").replace(/^[ \t]*(?:(?:https?:\/\/)?(?:www\.)?[\w-]+(?:\.[\w-]+)+(?:\/[^\s]*)?)[ \t]*$/gim, "").replace(/\n[ \t]*\n(?:[ \t]*\n)+/g, "\n\n").replace(/^[ \t\n]+|[ \t\n]+$/g, "");
     }
 
-    // Browser notifications often put the web-app origin on its own body
-    // line. Use that origin to identify the site while keeping it out of the
-    // displayed message and grouping web apps separately from the browser.
     function websiteApp(notification) {
         if (!notification)
             return null;
-        var lines = String(notification.body || "")
-            .replace(/<br\s*\/?\s*>/gi, "\n")
-            .replace(/<\/p\s*>/gi, "\n")
-            .replace(/<[^>]*>/g, "")
-            .replace(/&amp;/g, "&")
-            .replace(/&nbsp;/g, " ")
-            .split(/\r?\n/);
+        var lines = String(notification.body || "").replace(/<br\s*\/?\s*>/gi, "\n").replace(/<\/p\s*>/gi, "\n").replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").split(/\r?\n/);
         var knownSites = [
-            { host: "whatsapp.com", name: "WhatsApp", icon: "whatsapp" },
-            { host: "instagram.com", name: "Instagram", icon: "instagram" },
-            { host: "facebook.com", name: "Facebook", icon: "facebook" },
-            { host: "messenger.com", name: "Messenger", icon: "fbmessenger" },
-            { host: "telegram.org", name: "Telegram", icon: "telegram" },
-            { host: "discord.com", name: "Discord", icon: "discord" },
-            { host: "signal.org", name: "Signal", icon: "signal-desktop" },
-            { host: "slack.com", name: "Slack", icon: "slack" },
-            { host: "reddit.com", name: "Reddit", icon: "reddit" },
-            { host: "x.com", name: "X", icon: "twitter-x" },
-            { host: "twitter.com", name: "X", icon: "twitter-x" },
-            { host: "youtube.com", name: "YouTube", icon: "youtube" },
-            { host: "tiktok.com", name: "TikTok", icon: "tiktok" },
-            { host: "gmail.com", name: "Gmail", icon: "gmail" }
+            {
+                host: "whatsapp.com",
+                name: "WhatsApp",
+                icon: "whatsapp"
+            },
+            {
+                host: "instagram.com",
+                name: "Instagram",
+                icon: "instagram"
+            },
+            {
+                host: "facebook.com",
+                name: "Facebook",
+                icon: "facebook"
+            },
+            {
+                host: "messenger.com",
+                name: "Messenger",
+                icon: "fbmessenger"
+            },
+            {
+                host: "telegram.org",
+                name: "Telegram",
+                icon: "telegram"
+            },
+            {
+                host: "discord.com",
+                name: "Discord",
+                icon: "discord"
+            },
+            {
+                host: "signal.org",
+                name: "Signal",
+                icon: "signal-desktop"
+            },
+            {
+                host: "slack.com",
+                name: "Slack",
+                icon: "slack"
+            },
+            {
+                host: "reddit.com",
+                name: "Reddit",
+                icon: "reddit"
+            },
+            {
+                host: "x.com",
+                name: "X",
+                icon: "twitter-x"
+            },
+            {
+                host: "twitter.com",
+                name: "X",
+                icon: "twitter-x"
+            },
+            {
+                host: "youtube.com",
+                name: "YouTube",
+                icon: "youtube"
+            },
+            {
+                host: "tiktok.com",
+                name: "TikTok",
+                icon: "tiktok"
+            },
+            {
+                host: "gmail.com",
+                name: "Gmail",
+                icon: "gmail"
+            }
         ];
         for (var i = 0; i < lines.length; i++) {
             var match = lines[i].trim().match(/^(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?:\/[^\s]*)?$/i);
@@ -180,7 +209,7 @@ Scope {
     function notificationImage(notification) {
         if (!notification)
             return "";
-        // RetainableLock keeps image://qsimage handles valid after close.
+
         if (notification.historyId !== undefined) {
             return notification.image || "";
         } else if (notification.image) {
@@ -203,9 +232,7 @@ Scope {
             return "";
         if (/^(\/|file:|qrc:)/.test(iconName))
             return iconName;
-        // Notification appIcon should be a theme name or a file URL. Treat
-        // image-provider URLs as untrusted here: a stale qsimage handle can
-        // render Quickshell's purple missing-texture tile.
+
         if (/^image:/i.test(iconName))
             iconName = "";
         var icon = themeIconPath(iconName);
@@ -219,8 +246,7 @@ Scope {
         if (!notification)
             return;
         var records = notificationHistory.slice();
-        // A replacement uses the same id. Preserve its old text, but make only
-        // the newest record eligible to dismiss the live system notification.
+
         for (var i = 0; i < records.length; i++) {
             if (records[i].notificationId === notification.id)
                 records[i].live = false;
@@ -254,8 +280,6 @@ Scope {
             live: true
         });
 
-        // Bound the local history so a busy chat cannot grow the control center
-        // without limit. Keep the most recent 20 messages per application.
         var perApp = Object.create(null);
         records = records.filter(record => {
             var count = (perApp[record.appName] || 0) + 1;
@@ -281,9 +305,6 @@ Scope {
             notification.dismiss();
     }
 
-    // Keep live QObject values out of notificationHistory. History is passed to
-    // ListView as a JS model; placing actions/QObjects in it can crash Qt while
-    // it converts the nested notification-action sequence.
     function liveNotification(record) {
         if (!record || !record.live)
             return null;
@@ -340,8 +361,6 @@ Scope {
         toastNotification = null;
     }
 
-    // A destroyed notification object reads back as null — never show an
-    // empty popup for it.
     onToastNotificationChanged: if (!toastNotification)
         toastVisible = false
 
@@ -376,8 +395,7 @@ Scope {
             notification.tracked = true;
             root.remember(notification);
             root.toastNotification = notification;
-            // If the sender closes or replaces it (or it expires) while the
-            // popup is up, hide the popup instead of leaving an empty card.
+
             notification.closed.connect(() => {
                 if (root.toastNotification === notification)
                     root.hideToast();
@@ -406,9 +424,6 @@ Scope {
         }
     }
 
-    // The popup itself is drawn by the central notch (NotificationPeek in
-    // components/overlay); this only decides when it's up. Hovering it
-    // holds it open.
     property bool toastVisible: false
 
     function holdToast(held) {

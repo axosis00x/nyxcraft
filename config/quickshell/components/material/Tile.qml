@@ -2,12 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import "../../theme" as Palette
 
-// Quick-settings tile, shared by the control center and settings.
-//
-// Off: an outlined rounded rectangle. On: a tonal container in the tile's
-// tint (accent by default) whose corners round out a little further, with
-// the icon in a solid tint badge. Icon-only tiles fill solid tint when on. Every state change gives a small spring
-// pulse; pressing squeezes the corners and the scale.
 Item {
     id: root
 
@@ -17,15 +11,9 @@ Item {
     property string iconSource: ""
     property bool active: false
     property bool iconOnly: false
-    // Color used for the "on" state. Defaults to the accent; any palette
-    // color works, and its content color is picked to stay readable.
     property color tint: Palette.Theme.accent
     readonly property color onTint: Qt.colorEqual(tint, Palette.Theme.accent) ? Palette.Theme.accentText : Palette.Theme.surfaceSolid
-    // Optional fixed silhouette, e.g. one shape per state of a cycling
-    // toggle. -1 = the default off/on shape morph.
     property real shapeRadius: -1
-    // Bind to whatever identifies a multi-state toggle's current state to
-    // get the pulse on every change, not just on/off.
     property var pulseKey: undefined
     signal clicked
     signal rightClicked
@@ -70,8 +58,6 @@ Item {
         id: bg
         anchors.fill: parent
         radius: tileMouse.pressed ? Math.min(root.restRadius, Palette.Theme.radiusSmall) : root.restRadius
-        // Off tiles separate by tone alone (no outline); on tiles keep a
-        // faint tinted edge.
         color: root.iconOnly ? (root.active ? root.tint : Palette.Theme.surfaceContainerHigh) : (root.active ? Qt.alpha(root.tint, Palette.Theme.stateSelected) : Palette.Theme.surfaceContainerHigh)
         border.width: root.iconOnly || !root.active ? 0 : 1
         border.color: root.active ? Qt.alpha(root.tint, 0.1) : Palette.Theme.outlineSoft

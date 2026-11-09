@@ -2,13 +2,11 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Previous / play-pause / next for an MPRIS player. The play button is an
-// accent circle that squeezes on press and rounds out while playing.
 Row {
     id: root
 
     property var player: null
-    // Smaller buttons for the overview card.
+
     property bool compact: false
 
     readonly property real playSize: compact ? 36 : 52

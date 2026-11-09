@@ -7,16 +7,10 @@ import QtQuick.Layouts
 import "../../theme" as Palette
 import "../../components/material"
 
-// Picks the bar style (spread along the top, compact in the top centre, or
-// a vertical bar on the left), built like the theme picker: a search field
-// on the bottom edge, styles stacked above it with the same sliding
-// highlight and list transitions. Each row previews its layout as a tiny
-// screen with the bar drawn in, ringed in accent when it's the active one.
 Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -46,7 +40,6 @@ Item {
         }
     ]
 
-    // Prefix matches first, then substring matches (name or description).
     readonly property var options: {
         var q = query.trim().toLowerCase();
         if (q === "")
@@ -56,7 +49,6 @@ Item {
 
     readonly property int itemH: 56
     readonly property int visibleRows: Math.max(1, options.length)
-    // Same footprint as the theme picker and launcher.
     implicitWidth: Math.min(maxWidth - 32, Palette.Theme.listPanelWidth)
     implicitHeight: searchRow.height + visibleRows * itemH + 6
 
@@ -85,11 +77,9 @@ Item {
             powerMenu.closePowerMenu();
         closeTimer.stop();
         aboutToOpen();
-        // Visible first, so the list's fade-ins actually run.
         visible = true;
         search.text = "";
         query = "";
-        // Start on the active style.
         selected = Math.max(0, options.findIndex(o => service && o.value === service.style));
         search.forceActiveFocus();
     }
@@ -121,7 +111,6 @@ Item {
         selected = Math.max(0, Math.min(options.length - 1, selected + delta));
     }
 
-    // The list runs bottom-to-top, so Up steps further up the list.
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             if (search.text !== "")
@@ -141,7 +130,6 @@ Item {
         }
     }
 
-    // Hover only selects on real pointer movement (see Launcher.qml).
     property point lastPointer: Qt.point(-1, -1)
     function hoverSelect(item, mouse, index) {
         var p = item.mapToItem(null, mouse.x, mouse.y);
@@ -155,7 +143,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ── styles ────────────────────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -279,7 +266,6 @@ Item {
             }
         }
 
-        // ── search bar ────────────────────────────────────────────
         Item {
             id: searchRow
             Layout.fillWidth: true
@@ -288,7 +274,6 @@ Item {
             Rectangle {
                 id: searchField
                 anchors.fill: parent
-                // One even gap on the sides and bottom.
                 anchors.leftMargin: 6
                 anchors.rightMargin: 6
                 anchors.topMargin: 6
@@ -352,8 +337,6 @@ Item {
         }
     }
 
-    // A tiny screen with the bar drawn where this style puts it, ringed in
-    // accent when it's the active style (like the theme picker's disc).
     component LayoutPreview: Item {
         id: preview
 

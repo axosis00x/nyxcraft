@@ -56,7 +56,6 @@ in
     };
 
     scriptOpts.uosc = {
-      # YouTube-inspired bottom timeline and familiar compact control row.
       timeline_style = "bar";
       timeline_size = 32;
       timeline_step = 5;

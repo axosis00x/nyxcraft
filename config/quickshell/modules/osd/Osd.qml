@@ -4,8 +4,6 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// A separate overlay layer keeps system feedback visible above fullscreen
-// clients without reserving space or accepting pointer/keyboard input.
 PanelWindow {
     id: root
 
@@ -30,8 +28,6 @@ PanelWindow {
     property bool presented: false
     readonly property bool isMeter: kind === "volume" || kind === "brightness"
 
-    // The visual is purely informational: an empty input region lets all
-    // clicks and gestures pass straight through to the fullscreen client.
     mask: Region {}
 
     function showMeter(nextKind, nextValue, nextLabel) {
@@ -87,13 +83,11 @@ PanelWindow {
             anchors.bottomMargin: 8
             visible: root.isMeter
             value: root.value
-            // Volume blue, brightness yellow, as in the control center.
+
             accent: root.kind === "brightness" ? Palette.Theme.yellow : Palette.Theme.blue
             trackColor: Palette.Theme.osdTrack
             label: root.label
-            iconGlyph: root.kind === "brightness"
-                ? (root.value < 0.5 ? "\ue1ab" : "\ue1ac")
-                : (root.label === "Muted" || root.value <= 0.01 ? "\ue04f" : root.value < 0.5 ? "\ue04d" : "\ue050")
+            iconGlyph: root.kind === "brightness" ? (root.value < 0.5 ? "\ue1ab" : "\ue1ac") : (root.label === "Muted" || root.value <= 0.01 ? "\ue04f" : root.value < 0.5 ? "\ue04d" : "\ue050")
         }
 
         Lock {

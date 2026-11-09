@@ -1,8 +1,5 @@
 import QtQuick
 
-// Material 3 Expressive "cookie" shape — a circle whose radius oscillates
-// around its rim, giving the scalloped/squiggly-edged look used for shapes
-// like the play/pause FAB in Material You's expressive style.
 Item {
     id: root
 
@@ -22,8 +19,6 @@ Item {
             var cx = width / 2;
             var cy = height / 2;
             var R = Math.min(width, height) / 2;
-            // Solved so the outer peaks land exactly on R, regardless of
-            // amplitude, instead of overflowing the item's bounds.
             var baseR = R / (1 + root.amplitude);
             var steps = 200;
 

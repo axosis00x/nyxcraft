@@ -4,13 +4,9 @@ import "../../components/material"
 import "../notification"
 import "../../theme" as Palette
 
-// The dashboard's notifications tab: a title with the count and a clear
-// button, then the cards (newest in full, older ones compact until hovered),
-// or a calm empty state.
 Item {
     id: root
 
-    // The control center, for its notification state and actions.
     required property var center
 
     readonly property var notificationCenter: center.notificationCenter

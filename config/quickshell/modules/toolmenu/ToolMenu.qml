@@ -9,7 +9,7 @@ Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -108,11 +108,7 @@ Item {
     function choose(index) {
         var action = actions[index];
         closeToolMenu(true);
-        // grim/slurp/hyprpicker need to grab keyboard/pointer input, which
-        // only becomes available once the compositor has actually unmapped
-        // this layer surface -- that happens a frame after `visible = false`,
-        // not in this same tick. Defer the launch so the grab doesn't race
-        // this panel's own teardown.
+
         pendingCommand = action.command;
         launchTimer.restart();
     }
@@ -238,8 +234,16 @@ Item {
                         SequentialAnimation on opacity {
                             running: recording
                             loops: Animation.Infinite
-                            NumberAnimation { to: 0.25; duration: 650; easing.type: Easing.InOutSine }
-                            NumberAnimation { to: 1; duration: 650; easing.type: Easing.InOutSine }
+                            NumberAnimation {
+                                to: 0.25
+                                duration: 650
+                                easing.type: Easing.InOutSine
+                            }
+                            NumberAnimation {
+                                to: 1
+                                duration: 650
+                                easing.type: Easing.InOutSine
+                            }
                         }
                     }
 

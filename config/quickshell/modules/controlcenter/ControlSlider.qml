@@ -2,14 +2,12 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Control-center level slider: the shared Slider atom, with its inset icon
-// doubling as a button (e.g. click to mute, right-click for the mixer).
 Item {
     id: root
 
     property string iconGlyph: ""
     property real value: 0
-    // Fill color; each control center slider has its own theme hue.
+
     property color accent: Palette.Theme.accent
 
     signal iconClicked
@@ -20,14 +18,14 @@ Item {
     implicitHeight: 40
 
     Slider {
-        accent: root.accent
         id: slider
+        accent: root.accent
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         trackHeight: 24
         showValue: false
-        // Matches ControlCenter.minLevel: levels never go below 5%.
+
         minimum: 0.05
         icon: root.iconGlyph
         value: root.value
@@ -35,8 +33,7 @@ Item {
     }
 
     MouseArea {
-        // The icon zone never overlaps the handle (the minimum sits just
-        // past it), so clicking the icon always toggles.
+
         x: slider.x
         width: slider.iconZone
         enabled: !slider.pressed

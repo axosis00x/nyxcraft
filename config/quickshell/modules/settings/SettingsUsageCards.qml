@@ -5,11 +5,6 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// CPU, memory, disk and temperature in a 2×2 grid, each as a card with a
-// ring gauge around its icon and the current figure. The ring turns to the
-// warning color when the resource is nearly maxed (temperature: warning
-// from 70 °C, error from 85 °C). Disk and temperature come from the
-// window's SystemStats, which polls only while this page is open.
 GridLayout {
     id: root
 
@@ -22,10 +17,26 @@ GridLayout {
 
     Repeater {
         model: [
-            { key: "cpu", icon: "memory", title: "CPU" },
-            { key: "ram", icon: "memory_alt", title: "Memory" },
-            { key: "disk", icon: "hard_drive", title: "Disk" },
-            { key: "temp", icon: "thermostat", title: "Temperature" }
+            {
+                key: "cpu",
+                icon: "memory",
+                title: "CPU"
+            },
+            {
+                key: "ram",
+                icon: "memory_alt",
+                title: "Memory"
+            },
+            {
+                key: "disk",
+                icon: "hard_drive",
+                title: "Disk"
+            },
+            {
+                key: "temp",
+                icon: "thermostat",
+                title: "Temperature"
+            }
         ]
 
         delegate: Rectangle {
@@ -41,8 +52,7 @@ GridLayout {
                     return root.stats.temperatureFraction;
                 return root.panel.level(modelData.key);
             }
-            // Each resource its own hue (as on the dashboard); warning and
-            // error only when it's actually maxed or hot.
+
             readonly property color hue: ({
                     cpu: Palette.Theme.blue,
                     ram: Palette.Theme.purple,
@@ -68,8 +78,6 @@ GridLayout {
             radius: Palette.Theme.radiusMedium
             color: Palette.Theme.surfaceContainer
 
-            // Eased copy of `usage` for the ring, so each 2 s sample sweeps
-            // rather than jumps.
             property real shownUsage: usage
             Behavior on shownUsage {
                 EffectMotion {
@@ -84,7 +92,6 @@ GridLayout {
                 anchors.margins: Palette.Theme.spacingLarge
                 spacing: 14
 
-                // Ring gauge with the resource's icon in the middle.
                 Item {
                     Layout.preferredWidth: 56
                     Layout.preferredHeight: 56

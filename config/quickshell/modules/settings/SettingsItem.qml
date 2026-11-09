@@ -3,19 +3,14 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// One row of a settings group. The group card (SettingsPage) draws the
-// container; a row draws its state layer, rounded to match the card on the
-// first and last row, and a hairline below every row but the last. Pressing
-// an interactive row morphs it into a free-standing rounded card.
 Item {
     id: root
 
-    // nav | switch | slider | segment | info
     property string kind: "nav"
-    // Slider label; empty shows the value as a percentage.
+
     property string valueText: ""
     signal entered(string text)
-    // Slider tick at the default value (0–1), or -1 for none.
+
     property real defaultValue: -1
     property string icon: ""
     property string title: ""
@@ -39,8 +34,6 @@ Item {
     readonly property real groupRadius: Palette.Theme.radiusMedium
     readonly property bool morph: mouse.pressed && interactive
 
-    // Sliders need less vertical room than segmented controls: an 8px inset,
-    // one label, a 38px track and a small gap fit comfortably in 82px.
     implicitHeight: kind === "slider" ? 82 : (kind === "segment" ? 98 : (subtitle !== "" ? 58 : 48))
 
     Rectangle {
@@ -94,8 +87,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        // A thin gap in the window colour splits the group into segments
-        // (as in the control center) rather than an outlined hairline.
+
         height: 2
         color: Palette.Theme.bg
     }
@@ -205,7 +197,7 @@ Item {
             font.family: Palette.Theme.fontIcons
             font.weight: Palette.Theme.iconWeight
             font.pixelSize: Palette.Theme.iconSize
-            // Nudges toward the pointer on hover.
+
             Layout.rightMargin: mouse.containsMouse ? -3 : 0
 
             Behavior on Layout.rightMargin {
@@ -253,7 +245,6 @@ Item {
                 font.pixelSize: Palette.Theme.fontSizeBody
             }
 
-            // Plain value for sliders that don't take typed input.
             Text {
                 visible: root.kind === "slider" && root.defaultValue < 0
                 text: root.valueText !== "" ? root.valueText : Math.round(root.value * 100) + "%"
@@ -262,7 +253,6 @@ Item {
                 font.pixelSize: Palette.Theme.fontSizeXs
             }
 
-            // A small field for typing an exact value; Enter applies it.
             Rectangle {
                 id: valueField
                 visible: root.kind === "slider" && root.defaultValue >= 0
@@ -342,8 +332,6 @@ Item {
             onMoved: value => root.moved(value)
         }
 
-        // Segmented control: one track with a single indicator that springs
-        // between options and stretches as it travels.
         Rectangle {
             id: segTrack
             visible: root.kind === "segment"
@@ -370,8 +358,6 @@ Item {
                 radius: height / 2
                 color: Palette.Theme.accent
 
-                // Leading edge moves fast and trailing edge follows, so the
-                // pill visibly stretches toward its destination.
                 property real targetL: 4 + segTrack.segWidth * segTrack.currentIndex
                 property real targetR: targetL + segTrack.segWidth
                 property real leadL: targetL

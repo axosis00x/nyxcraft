@@ -10,11 +10,6 @@ import Quickshell.Widgets
 import "../../theme" as Palette
 import "../../components/material"
 
-// Every workspace at a glance: cards floating over the dimmed desktop, each
-// labelled with its number and window count ("current" on the one you're
-// on), live window thumbnails inside, special workspaces in their own
-// column, and the shortcuts underneath. Drag a window onto another card to
-// move it there; 1–9 / 0 jump straight to a workspace.
 PanelWindow {
     id: root
 
@@ -25,8 +20,6 @@ PanelWindow {
     readonly property int currentId: Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : 1
     readonly property var specials: Hyprland.workspaces.values.filter(w => w.id < 0)
 
-    // Cards as wide as fit across the screen (five, plus the special
-    // column when there is one), within 150–256 px, in 16:9.
     readonly property real cardW: {
         var across = 5 + (specials.length > 0 ? 1 : 0);
         var gaps = 4 * 14 + (specials.length > 0 ? 2 * 28 + 1 : 0);
@@ -74,8 +67,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        // Nearly opaque theme background, so busy wallpapers and desktop
-        // widgets don't compete with the cards.
+
         color: Palette.Theme.bg
         opacity: root.active ? 0.9 : 0
         Behavior on opacity {
@@ -101,7 +93,7 @@ PanelWindow {
         Keys.onReturnPressed: root.service.confirm()
         Keys.onEnterPressed: root.service.confirm()
         Keys.onEscapePressed: root.service.cancel()
-        // 1–9 and 0 (workspace 10) jump straight there.
+
         Keys.onPressed: event => {
             if (event.key >= Qt.Key_0 && event.key <= Qt.Key_9) {
                 var index = event.key === Qt.Key_0 ? 9 : event.key - Qt.Key_1;
@@ -231,9 +223,6 @@ PanelWindow {
         }
     }
 
-    // ── pieces ─────────────────────────────────────────────────────
-
-    // "[3] 1 window ............ current" above a card.
     component CardLabel: Item {
         id: label
         property string badge: ""
@@ -285,9 +274,6 @@ PanelWindow {
         }
     }
 
-    // A workspace's card: its windows as live thumbnails (up to four, then
-    // "+N"), or its number faintly when empty. The selected card wears an
-    // accent outline.
     component WorkspaceCard: Rectangle {
         id: card
         property var ws: null
@@ -300,7 +286,7 @@ PanelWindow {
         readonly property bool hasWindows: tiles.count > 0
 
         radius: Palette.Theme.radiusMedium
-        // Opaque, so translucent themes don't show the desktop through it.
+
         color: Palette.Theme.surfaceSolid
         border.width: focused ? 2 : 1
         border.color: focused ? Palette.Theme.accent : Palette.Theme.outlineVariant
@@ -342,8 +328,6 @@ PanelWindow {
             onClicked: card.activated()
         }
 
-        // Hovering anywhere on the card selects it (accent border), even over
-        // the window tiles, whose own mouse areas handle clicks and drags.
         HoverHandler {
             onHoveredChanged: {
                 if (hovered)
@@ -351,7 +335,6 @@ PanelWindow {
             }
         }
 
-        // Plain Item (not a positioner) so a dragged tile owns its x/y.
         Item {
             id: area
             anchors.fill: parent
@@ -384,9 +367,6 @@ PanelWindow {
                         radius: Palette.Theme.radiusXs
                         color: Palette.Theme.surfaceContainerHighest
 
-                        // Only exists while the overview is open: each
-                        // capture holds GPU buffers, and tearing them down
-                        // at shell exit has crashed in libwayland.
                         Loader {
                             anchors.fill: parent
                             active: root.active && !tile.overflow
@@ -397,8 +377,6 @@ PanelWindow {
                             }
                         }
 
-                        // Not parent.radius: a ClippingRectangle's children
-                        // live in a content item that has no radius.
                         StateLayer {
                             radius: Palette.Theme.radiusXs
                             hovered: tileMouse.containsMouse && !tileMouse.drag.active

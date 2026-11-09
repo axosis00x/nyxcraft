@@ -8,10 +8,6 @@ Item {
 
     property var entries: []
 
-    // ── pins ─────────────────────────────────────────────────────────
-    // A pinned item's full content (text or image bytes) is saved to its
-    // own file, so it survives cliphist ageing it out or a wipe. The JSON
-    // index keeps only the one-line preview cliphist showed for it.
     readonly property string pinDir: Quickshell.cachePath("clipboard-pins")
     readonly property var pins: pinIndex.items
 
@@ -27,10 +23,12 @@ Item {
         if (!entry || !/^[0-9]+$/.test(entry.id) || isPinned(entry.text))
             return;
         var pid = String(Date.now());
-        pinIndex.items = [{
+        pinIndex.items = [
+            {
                 pid: pid,
                 text: entry.text
-            }].concat(pins);
+            }
+        ].concat(pins);
         pinProc.exec(["sh", "-c", "mkdir -p \"$(dirname \"$2\")\" && cliphist decode \"$1\" > \"$2\"", "cliphist-pin", entry.id, pinPath(pid)]);
     }
 
@@ -74,7 +72,6 @@ Item {
         decode.exec(["sh", "-c", "cliphist decode \"$1\" | wl-copy", "cliphist-decode", entryId]);
     }
 
-    // Removes one entry; cliphist delete takes the exact list line on stdin.
     function remove(entryId) {
         if (!/^[0-9]+$/.test(entryId))
             return;
@@ -82,8 +79,6 @@ Item {
         removeProc.exec(["sh", "-c", "cliphist list | grep -m1 \"^$1\t\" | cliphist delete", "cliphist-delete", entryId]);
     }
 
-    // Image entries are decoded once into the cache so the panel can show
-    // a thumbnail; returns the file path to load.
     readonly property string previewDir: Quickshell.cachePath("clipboard-previews")
 
     function previewPath(entryId) {
@@ -109,8 +104,7 @@ Item {
             onStreamFinished: {
                 var rows = text.trim() === "" ? [] : text.trim().split("\n");
                 var parsed = [];
-                // cliphist already emits newest entries first. Keep that order
-                // so the top row is always the latest copied item.
+
                 for (var i = 0; i < rows.length && parsed.length < 50; ++i) {
                     var tab = rows[i].indexOf("\t");
                     if (tab > 0)
@@ -131,7 +125,7 @@ Item {
     Process {
         id: removeProc
     }
-    // Bumps once previews are on disk so delegates retry their images.
+
     property int previewsReady: 0
     Process {
         id: previewProc

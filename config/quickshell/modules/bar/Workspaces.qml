@@ -5,23 +5,10 @@ import QtQuick.Layouts
 import "../../theme" as Palette
 import "../../components/material"
 
-// Workspace dots. The focused workspace's dot stretches into an accent pill
-// while the previous one eases back down to a dot.
 Item {
     id: root
-
-    // Stacks the dots top-to-bottom instead of left-to-right, and grows the
-    // active slot vertically instead of horizontally — matching the
-    // vertical workspace-switch animation used at the Hyprland compositor
-    // level.
     property bool vertical: false
-    // Set by Bar.qml so each dot can open the overview parked on the
-    // workspace it represents instead of one relative to whatever's focused.
     property var service: null
-
-    // Compact use (the compact bar's status notch) shows only as many dots
-    // as are in use — up to the highest occupied or active workspace — but
-    // never fewer than three.
     property bool trimToUsed: false
     readonly property int count: {
         if (!trimToUsed)
@@ -42,10 +29,6 @@ Item {
         var id = Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1;
         return id >= 1 && id <= 10 ? id - 1 : -1;
     }
-
-    // Opens the overview at the dot under (px, py) in this item's
-    // coordinates, or at the current workspace when between dots — for
-    // hosts whose own mouse area sits on top (the compact status notch).
     function openAtPosition(px, py) {
         if (!service)
             return;
@@ -90,16 +73,9 @@ Item {
                     return false;
                 }
                 readonly property real length: isActive ? root.activeLength : root.dotSize
-
-                // Layout.preferredWidth/Height (not implicitWidth/Height) is
-                // what GridLayout re-lays out on every animation frame.
                 Layout.preferredWidth: root.vertical ? root.dotSize : length
                 Layout.preferredHeight: root.vertical ? length : root.dotSize
                 radius: root.dotSize / 2
-                // Urgent (a window there wants attention) wins over everything,
-                // in the theme's danger colour. Text-muted is opaque in every
-                // palette, unlike transparent surface outlines used by AMOLED
-                // themes such as Ryo.
                 color: isUrgent ? Palette.Theme.errorColor : (isActive ? Palette.Theme.accent : (dotMouse.containsMouse ? Palette.Theme.textSecondary : Palette.Theme.textMuted))
                 scale: isActive ? 1 : 0.9
 
@@ -127,8 +103,6 @@ Item {
                 MouseArea {
                     id: dotMouse
                     anchors.fill: parent
-                    // Dots are small (10-45px); grow the hit area so they're
-                    // easy to click without touching the surrounding capsule.
                     anchors.margins: -4
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor

@@ -2,10 +2,6 @@ import QtQuick
 import Quickshell.Io
 import "../../theme" as Palette
 
-// Compact bar version of Bongo Cat, using the classic bongocat vector font
-// (the same artwork as the dms-plugins widget) instead of pixel sprites.
-// libinput reports key events from every keyboard and the cat switches
-// glyphs for each press.
 Item {
     id: root
 
@@ -66,13 +62,16 @@ Item {
         font.pixelSize: 24
         color: Palette.Theme.textPrimary
 
-        // The font composes each pose out of glyph pairs.
         text: {
             switch (root.pawState) {
-            case 1: return "dc";
-            case 2: return "ba";
-            case 3: return "da";
-            default: return "bc";
+            case 1:
+                return "dc";
+            case 2:
+                return "ba";
+            case 3:
+                return "da";
+            default:
+                return "bc";
             }
         }
     }

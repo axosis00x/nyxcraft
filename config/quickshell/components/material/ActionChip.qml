@@ -1,8 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// Pill chip: outlined when idle, accent-filled when active. Morphs from a
-// rounded rectangle to a full pill as it activates.
 Rectangle {
     id: root
 
@@ -15,9 +13,9 @@ Rectangle {
 
     implicitHeight: root.chipHeight
     implicitWidth: chipText.implicitWidth + root.horizontalPadding
-    // One shape in both states; follows the corner roundness setting.
+
     radius: Math.min(height / 2, Palette.Theme.radiusSmall)
-    // Idle chips are filled (tonal) so they read on any surface.
+
     color: root.active ? Palette.Theme.accent : Palette.Theme.surfaceContainerHighest
 
     Behavior on radius {

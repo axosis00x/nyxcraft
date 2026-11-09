@@ -9,7 +9,7 @@ Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -113,7 +113,7 @@ Item {
         var action = actions[index];
         if (action.dangerous) {
             confirmAction = action.name;
-            // Enter must not perform a destructive action by default.
+
             confirmChoiceSelected = false;
             return;
         }
@@ -345,8 +345,7 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: 46
                     radius: Palette.Theme.radiusSmall
-                    // The primary background follows keyboard/mouse focus,
-                    // including the X/Cancel choice.
+
                     color: !root.confirmChoiceSelected ? Palette.Theme.accent : Palette.Theme.surfaceContainerLow
                     scale: cancelMouse.pressed ? 0.98 : (cancelMouse.containsMouse ? 1.015 : 1)
                     Behavior on scale {

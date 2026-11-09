@@ -10,7 +10,7 @@ Item {
     property string tempC: ""
     property string conditionText: ""
     property int weatherCode: 0
-    property bool isStale: false // true when showing a cached (not freshly fetched) reading
+    property bool isStale: false
     readonly property bool available: tempC !== ""
     readonly property string iconFontFamily: Palette.Theme.fontIcons || "Material Symbols Outlined"
 
@@ -37,7 +37,6 @@ Item {
         weatherProcess.running = true;
     }
 
-    // Persistent last-known-good reading, survives quickshell/session restarts.
     FileView {
         id: cacheFile
         path: Quickshell.cachePath("weather-cache.json")
@@ -49,10 +48,6 @@ Item {
             property string tempC: ""
             property string conditionText: ""
             property int weatherCode: 0
-
-            // Fires once the file finishes loading (or immediately with
-            // defaults if it doesn't exist yet). Only use it as a fallback
-            // if a live reading hasn't already come in.
             onTempCChanged: {
                 if (root.tempC === "" && cache.tempC !== "") {
                     root.tempC = cache.tempC;
@@ -72,16 +67,12 @@ Item {
         onTriggered: root.refresh()
     }
 
-    // Debounce bursts of nmcli events (e.g. Wi-Fi association followed
-    // immediately by DHCP/connectivity-check lines) into a single refresh.
     Timer {
         id: reconnectDebounce
         interval: 2000
         onTriggered: root.refresh()
     }
 
-    // Long-running nmcli monitor so a fresh reading is fetched as soon as
-    // connectivity comes back, instead of waiting up to 5 minutes.
     Process {
         id: networkMonitor
         command: ["nmcli", "monitor"]
@@ -107,14 +98,10 @@ Item {
                     root.weatherCode = parseInt(current.weatherCode);
                     root.isStale = false;
 
-                    // Update the cache so this reading survives a restart.
                     cache.tempC = root.tempC;
                     cache.conditionText = root.conditionText;
                     cache.weatherCode = root.weatherCode;
-                } catch (e) {
-                    // Transient network/parse failure — keep showing the
-                    // last good reading (live or cached) instead of blanking out.
-                }
+                } catch (e) {}
             }
         }
     }
@@ -136,8 +123,6 @@ Item {
             Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
         }
         Text {
-            // Vertical bar is narrow — "C" is implied, drop it to save
-            // width instead of forcing the whole bar wider to fit "20°C".
             text: root.tempC + (root.vertical ? "°" : "°C")
             color: Palette.Theme.textPrimary
             opacity: root.isStale ? 0.55 : 1.0

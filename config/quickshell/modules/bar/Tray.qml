@@ -10,11 +10,8 @@ import "../../components/material"
 GridLayout {
     id: root
 
-    // Pass the enclosing PanelWindow so right-click menus can position correctly.
     required property var parentWindow
     property bool vertical: false
-    // Each item is a square, hoverable cell the same size as the bar's icon
-    // buttons (e.g. the settings button beside it), so they line up evenly.
     property real cellSize: 24
     property real cellRadius: Palette.Theme.radiusSmall - 3
 
@@ -33,7 +30,6 @@ GridLayout {
             implicitHeight: root.cellSize
             Layout.alignment: Qt.AlignCenter
 
-            // ── icon ─────────────────────────────────────────────
             IconImage {
                 anchors.centerIn: parent
                 implicitSize: 16
@@ -42,14 +38,12 @@ GridLayout {
                 mipmap: true
             }
 
-            // ── hover state layer ────────────────────────────────
             StateLayer {
                 radius: root.cellRadius
                 hovered: ma.containsMouse
                 pressed: ma.pressed
             }
 
-            // ── mouse handling ───────────────────────────────────
             MouseArea {
                 id: ma
                 anchors.fill: parent
@@ -66,7 +60,6 @@ GridLayout {
                 }
             }
 
-            // ── tooltip ──────────────────────────────────────────
             ToolTip {
                 visible: ma.containsMouse && trayIcon.modelData.tooltipTitle !== ""
                 text: {

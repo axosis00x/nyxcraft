@@ -2,10 +2,6 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// A scrolling stack of titled sections. A section is either a card of rows
-// separated by hairlines, (layout: "tiles") a grid of quick-settings tiles, or
-// (layout: "themes" / "wallpapers" / "usage" / "displays") a custom block. A custom
-// block's `rows` are only there so search can find it.
 Flickable {
     id: root
 
@@ -13,7 +9,7 @@ Flickable {
     property var sections: []
 
     contentWidth: width
-    // Room below the last row for the Save / Cancel bar.
+
     contentHeight: column.implicitHeight + 80
     clip: true
     boundsBehavior: Flickable.StopAtBounds
@@ -27,7 +23,6 @@ Flickable {
         }
     }
 
-    // A readable width, centred, when the window is large or tiled.
     Column {
         id: column
         width: Math.min(root.width, 760)
@@ -108,15 +103,17 @@ Flickable {
                     }
                 }
 
-                // Only built while the window is open: the wallpaper gallery
-                // decodes a thumbnail per file, and both re-read their lists
-                // each time it opens.
                 Loader {
                     active: section.gallery && root.panel.shown
                     visible: active
                     width: section.width
                     height: item ? item.implicitHeight : 0
-                    sourceComponent: ({ themes: themeGrid, wallpapers: wallpaperGrid, usage: usageCards, displays: displayCards })[section.modelData.layout]
+                    sourceComponent: ({
+                            themes: themeGrid,
+                            wallpapers: wallpaperGrid,
+                            usage: usageCards,
+                            displays: displayCards
+                        })[section.modelData.layout]
                 }
             }
         }

@@ -5,30 +5,21 @@ import QtQuick.Effects
 import "../../theme" as Palette
 import "../../components/material"
 
-// Everything drawn on the lock screen. Kept separate from the session-lock
-// surface (LockSurface.qml) so it can also be previewed in a plain window.
-//
-// Deliberately minimal: the blurred wallpaper, a clock with the date, and a
-// slim password pill. Enter unlocks; Escape clears.
 Item {
     id: root
 
     required property var lockScreen
 
-    // Drives the entrance: everything eases into place once shown.
     property bool shown: false
 
     readonly property bool hasText: lockScreen.typed.length > 0
-    // Show the typed password instead of dots (eye button). Hidden again as
-    // soon as the field empties (submit, Escape, or clearing it).
+
     property bool reveal: false
     onHasTextChanged: if (!hasText)
         reveal = false
-    // Depth effect (as on iOS/Android): with a subject cutout available, the
-    // wallpaper stays sharp, the clock grows and moves up, and the cutout is
-    // layered over it so the subject stands in front of the time.
+
     readonly property bool depth: (lockScreen.depthPath || "") !== "" && cutout.status === Image.Ready
-    // Shared by the wallpaper and the cutout so the two stay pixel-aligned.
+
     readonly property real bgScale: shown ? 1 : 1.05
     readonly property color stateColor: lockScreen.authFailed ? Palette.Theme.errorColor : Palette.Theme.accent
 
@@ -37,7 +28,6 @@ Item {
         precision: SystemClock.Minutes
     }
 
-    // ── wallpaper ───────────────────────────────────────────────────
     Image {
         id: bg
         anchors.fill: parent
@@ -79,10 +69,6 @@ Item {
         }
     }
 
-    // ── keyboard ────────────────────────────────────────────────────
-    // Invisible: exists only to hold keyboard focus (and handle compose /
-    // dead keys) so typing works immediately without clicking anything. Its
-    // text is mirrored into the shared buffer the visible field renders.
     TextInput {
         id: keyCatcher
         width: 1
@@ -91,7 +77,7 @@ Item {
         echoMode: TextInput.NoEcho
         focus: true
         selectByMouse: false
-        // Stays enabled while PAM verifies so focus is never dropped.
+
         readOnly: root.lockScreen.authBusy
 
         Keys.onEscapePressed: root.lockScreen.typed = ""
@@ -119,8 +105,6 @@ Item {
         }
     }
 
-    // Re-grab focus whenever the compositor hands this surface the keyboard,
-    // or the pointer wanders over it.
     Item {
         Window.onActiveChanged: {
             if (Window.active)
@@ -140,7 +124,6 @@ Item {
         shown = true;
     }
 
-    // ── clock ───────────────────────────────────────────────────────
     ColumnLayout {
         id: clockCol
         anchors.horizontalCenter: parent.horizontalCenter
@@ -149,7 +132,6 @@ Item {
         spacing: 2
         opacity: root.shown ? 1 : 0
 
-        // Soft shadow keeps the text legible over bright wallpapers.
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
@@ -172,12 +154,13 @@ Item {
             text: Qt.formatDateTime(clock.date, "hh:mm")
             color: Palette.Theme.textPrimary
             font.family: "SF Pro Display"
-            // SF Pro Display's heavier cuts with tight tracking, like the iOS
-            // lock-screen clock; larger still in depth mode.
+
             font.pixelSize: root.depth ? 220 : 168
             font.weight: Font.DemiBold
             font.letterSpacing: root.depth ? -7 : -5
-            font.features: { "tnum": 1 }
+            font.features: {
+                "tnum": 1
+            }
             lineHeightMode: Text.FixedHeight
             lineHeight: font.pixelSize * 0.95
 
@@ -201,9 +184,6 @@ Item {
         }
     }
 
-    // ── depth cutout ────────────────────────────────────────────────
-    // The wallpaper's subject, drawn over the clock. Same size, crop and
-    // scale as the wallpaper, so it lines up exactly.
     Image {
         id: cutout
         anchors.fill: parent
@@ -230,8 +210,6 @@ Item {
         }
     }
 
-    // Depth mode: the date sits above the big clock and, unlike the clock,
-    // in front of the subject (as on iOS).
     Text {
         anchors.horizontalCenter: clockCol.horizontalCenter
         anchors.bottom: clockCol.top
@@ -253,8 +231,6 @@ Item {
         }
     }
 
-    // Depth mode keeps the wallpaper sharp, so a soft scrim under the
-    // bottom controls keeps the avatar, name and password legible.
     Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
@@ -280,8 +256,6 @@ Item {
         }
     }
 
-    // ── who ─────────────────────────────────────────────────────────
-    // Profile picture with the username, sitting just above the password.
     Column {
         anchors.horizontalCenter: field.horizontalCenter
         anchors.bottom: field.top
@@ -307,7 +281,6 @@ Item {
         }
     }
 
-    // ── password ────────────────────────────────────────────────────
     Item {
         id: field
         anchors.horizontalCenter: parent.horizontalCenter
@@ -330,8 +303,6 @@ Item {
             id: shakeTranslate
         }
 
-        // Same corner radius as the bar's capsules; a frosted dark fill that
-        // reads on any wallpaper, with the accent edge appearing as you type.
         Rectangle {
             anchors.fill: parent
             radius: Palette.Theme.radiusSmall
@@ -347,7 +318,6 @@ Item {
             }
         }
 
-        // Lock icon on the left; turns accent while typing, red on failure.
         Text {
             anchors.left: parent.left
             anchors.leftMargin: 16
@@ -363,8 +333,6 @@ Item {
             }
         }
 
-        // Right side: a spinner while the password is being checked,
-        // otherwise (once there's text) an eye button to show/hide it.
         Text {
             anchors.right: parent.right
             anchors.rightMargin: 16
@@ -427,13 +395,12 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.reveal = !root.reveal;
-                    // Keep typing going straight into the password.
+
                     keyCatcher.forceActiveFocus();
                 }
             }
         }
 
-        // The typed password itself, when revealed.
         Text {
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
@@ -466,9 +433,6 @@ Item {
             }
         }
 
-        // Typed-character dots. The row glides to stay centred as dots are
-        // added or removed (rather than jumping by half a dot), and each new
-        // dot eases in from small and transparent — smooth, no bounce.
         Row {
             id: dots
             anchors.verticalCenter: parent.verticalCenter

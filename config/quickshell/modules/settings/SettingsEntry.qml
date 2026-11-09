@@ -1,7 +1,5 @@
 import QtQuick
 
-// Wires one row spec ({ kind, key, icon, title, ... }) to the panel's live
-// state, so pages can be plain static data.
 SettingsItem {
     id: entry
 

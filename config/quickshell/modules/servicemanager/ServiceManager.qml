@@ -8,7 +8,7 @@ import "../../theme" as Palette
 Item {
     id: root
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -117,171 +117,169 @@ Item {
         }
     }
 
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 10
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 14
-            spacing: 10
-
-            RowLayout {
+        RowLayout {
+            Layout.fillWidth: true
+            Text {
+                text: "Services"
+                color: Palette.Theme.textTitle
+                font.family: Palette.Theme.fontSans
+                font.pixelSize: Palette.Theme.fontSizeTitle
+                font.weight: Font.DemiBold
                 Layout.fillWidth: true
-                Text {
-                    text: "Services"
-                    color: Palette.Theme.textTitle
-                    font.family: Palette.Theme.fontSans
-                    font.pixelSize: Palette.Theme.fontSizeTitle
-                    font.weight: Font.DemiBold
-                    Layout.fillWidth: true
-                }
-                Text {
-                    text: root.entries.length + " units"
-                    color: Palette.Theme.textMuted
-                    font.family: Palette.Theme.fontSans
-                    font.pixelSize: Palette.Theme.fontSizeXs
-                }
-                ActionChip {
-                    label: "Refresh"
-                    onClicked: root.refresh()
-                }
             }
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                radius: Palette.Theme.radiusMedium
-                color: Palette.Theme.surfaceContainerHigh
-                border.width: search.activeFocus ? 1 : 0
-                border.color: Palette.Theme.accent
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 12
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\ue8b6"
-                    color: search.activeFocus ? Palette.Theme.accent : Palette.Theme.textMuted
-                    font.family: Palette.Theme.fontIcons
-                    font.weight: Palette.Theme.iconWeight
-                    font.pixelSize: Palette.Theme.iconSizeSmall
-                }
-                TextInput {
-                    id: search
-                    anchors.left: parent.left
-                    anchors.leftMargin: 39
-                    anchors.right: parent.right
-                    anchors.rightMargin: 12
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    color: Palette.Theme.textPrimary
-                    font.family: Palette.Theme.fontMono
-                    font.pixelSize: Palette.Theme.fontSizeSmall
-                    verticalAlignment: TextInput.AlignVCenter
-                    text: root.query
-                    selectByMouse: true
-                    onTextChanged: {
-                        root.query = text;
-                        root.selected = 0;
-                    }
-                    Keys.onPressed: event => root.handleKey(event)
-                }
-                Text {
-                    anchors.left: parent.left
-                    anchors.leftMargin: 39
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: !search.text && !search.activeFocus
-                    text: "Filter user services"
-                    color: Palette.Theme.textMuted
-                    font.family: Palette.Theme.fontMono
-                    font.pixelSize: Palette.Theme.fontSizeSmall
-                }
+            Text {
+                text: root.entries.length + " units"
+                color: Palette.Theme.textMuted
+                font.family: Palette.Theme.fontSans
+                font.pixelSize: Palette.Theme.fontSizeXs
             }
-
-            ListView {
-                id: serviceList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
-                spacing: 6
-                model: root.filtered
-                currentIndex: root.selected
-                // Accent ring that glides over the cards to the selection.
-                highlightFollowsCurrentItem: false
-                highlight: MovingHighlight {
-                    target: serviceList.currentItem
-                    z: 2
-                    radius: Palette.Theme.radiusSmall
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Palette.Theme.accent
-                }
-                delegate: Rectangle {
-                    required property var modelData
-                    required property int index
-                    width: serviceList.width
-                    height: 58
-                    radius: Palette.Theme.radiusSmall
-                    color: index === root.selected ? Palette.Theme.surfaceContainerHigh : Palette.Theme.surfaceContainerLow
-
-                    Behavior on color {
-                        ColorMotion {}
-                    }
-
-                    Rectangle {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 7
-                        height: 7
-                        radius: 4
-                        color: modelData.active === "active" ? Palette.Theme.accent : Palette.Theme.textMuted
-                    }
-                    ColumnLayout {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 28
-                        anchors.right: actions.left
-                        anchors.rightMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 1
-                        Text {
-                            text: modelData.unit
-                            color: Palette.Theme.textPrimary
-                            font.family: Palette.Theme.fontMono
-                            font.pixelSize: Palette.Theme.fontSizeXs
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            text: modelData.description || modelData.active + " · " + modelData.sub
-                            color: Palette.Theme.textMuted
-                            font.family: Palette.Theme.fontMono
-                            font.pixelSize: 9
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                        }
-                    }
-                    RowLayout {
-                        id: actions
-                        anchors.right: parent.right
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 4
-                        ActionChip {
-                            label: modelData.active === "active" ? "Stop" : "Start"
-                            onClicked: root.toggle(modelData)
-                        }
-                        ActionChip {
-                            label: "Restart"
-                            onClicked: root.action(modelData.unit, "restart")
-                        }
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        z: -1
-                        hoverEnabled: true
-                        onEntered: root.selected = index
-                    }
-                }
+            ActionChip {
+                label: "Refresh"
+                onClicked: root.refresh()
             }
-
         }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 40
+            radius: Palette.Theme.radiusMedium
+            color: Palette.Theme.surfaceContainerHigh
+            border.width: search.activeFocus ? 1 : 0
+            border.color: Palette.Theme.accent
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\ue8b6"
+                color: search.activeFocus ? Palette.Theme.accent : Palette.Theme.textMuted
+                font.family: Palette.Theme.fontIcons
+                font.weight: Palette.Theme.iconWeight
+                font.pixelSize: Palette.Theme.iconSizeSmall
+            }
+            TextInput {
+                id: search
+                anchors.left: parent.left
+                anchors.leftMargin: 39
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                color: Palette.Theme.textPrimary
+                font.family: Palette.Theme.fontMono
+                font.pixelSize: Palette.Theme.fontSizeSmall
+                verticalAlignment: TextInput.AlignVCenter
+                text: root.query
+                selectByMouse: true
+                onTextChanged: {
+                    root.query = text;
+                    root.selected = 0;
+                }
+                Keys.onPressed: event => root.handleKey(event)
+            }
+            Text {
+                anchors.left: parent.left
+                anchors.leftMargin: 39
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !search.text && !search.activeFocus
+                text: "Filter user services"
+                color: Palette.Theme.textMuted
+                font.family: Palette.Theme.fontMono
+                font.pixelSize: Palette.Theme.fontSizeSmall
+            }
+        }
+
+        ListView {
+            id: serviceList
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            spacing: 6
+            model: root.filtered
+            currentIndex: root.selected
+
+            highlightFollowsCurrentItem: false
+            highlight: MovingHighlight {
+                target: serviceList.currentItem
+                z: 2
+                radius: Palette.Theme.radiusSmall
+                color: "transparent"
+                border.width: 1
+                border.color: Palette.Theme.accent
+            }
+            delegate: Rectangle {
+                required property var modelData
+                required property int index
+                width: serviceList.width
+                height: 58
+                radius: Palette.Theme.radiusSmall
+                color: index === root.selected ? Palette.Theme.surfaceContainerHigh : Palette.Theme.surfaceContainerLow
+
+                Behavior on color {
+                    ColorMotion {}
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 7
+                    height: 7
+                    radius: 4
+                    color: modelData.active === "active" ? Palette.Theme.accent : Palette.Theme.textMuted
+                }
+                ColumnLayout {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 28
+                    anchors.right: actions.left
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1
+                    Text {
+                        text: modelData.unit
+                        color: Palette.Theme.textPrimary
+                        font.family: Palette.Theme.fontMono
+                        font.pixelSize: Palette.Theme.fontSizeXs
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        text: modelData.description || modelData.active + " · " + modelData.sub
+                        color: Palette.Theme.textMuted
+                        font.family: Palette.Theme.fontMono
+                        font.pixelSize: 9
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                }
+                RowLayout {
+                    id: actions
+                    anchors.right: parent.right
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 4
+                    ActionChip {
+                        label: modelData.active === "active" ? "Stop" : "Start"
+                        onClicked: root.toggle(modelData)
+                    }
+                    ActionChip {
+                        label: "Restart"
+                        onClicked: root.action(modelData.unit, "restart")
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    z: -1
+                    hoverEnabled: true
+                    onEntered: root.selected = index
+                }
+            }
+        }
+    }
 
     Timer {
         id: closeTimer

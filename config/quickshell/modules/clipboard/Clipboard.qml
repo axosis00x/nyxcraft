@@ -8,15 +8,9 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// Clipboard history, laid out like the launcher: a pill search field on the
-// bottom edge with entries stacked above it, newest nearest the field. A
-// ScriptModel animates filtering, images show a thumbnail, links and colors
-// get their own icon, and single entries can be deleted. Pinned entries
-// (pin button or Ctrl+P) sit first and never age out (ClipboardService).
 Item {
     id: root
     visible: false
-    // Still visible while the close delay runs, but on its way out.
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -27,11 +21,7 @@ Item {
     property int selected: 0
 
     readonly property int itemH: 56
-    // Five rows in view, like the launcher; the rest scroll.
     readonly property int maxVisible: 5
-
-    // Pinned items first (newest pin first), then history newest first,
-    // without the history copies of anything pinned.
     readonly property var allEntries: {
         if (!service)
             return [];
@@ -45,9 +35,6 @@ Item {
         pinned.forEach(p => texts[p.text] = true);
         return pinned.concat(service.entries.filter(e => !texts[e.text]));
     }
-
-    // While searching, matches that start with the query (or a word of it)
-    // come before ones that merely contain it.
     readonly property var entries: {
         var q = query.trim().toLowerCase();
         if (q === "")
@@ -59,7 +46,10 @@ Item {
             if (at === -1)
                 return;
             var boost = at === 0 ? 2 : (/[\s\-_.\/:]/.test(t[at - 1]) ? 1 : 0);
-            hits.push({ e: e, rank: boost * 1000 - i });
+            hits.push({
+                e: e,
+                rank: boost * 1000 - i
+            });
         });
         hits.sort((a, b) => b.rank - a.rank);
         return hits.map(h => h.e);
@@ -122,8 +112,6 @@ Item {
             selected = Math.max(0, Math.min(selected, entries.length - 2));
         }
     }
-    // Pinning moves the item to the front; unpinning leaves its history
-    // copy (if cliphist still has it) in place.
     function togglePin(index) {
         if (index >= 0 && index < entries.length) {
             var e = entries[index];
@@ -135,7 +123,6 @@ Item {
             selected = Math.max(0, Math.min(entries.length - 1, selected + delta));
     }
 
-    // ── entry kinds ───────────────────────────────────────────────
     function isBinary(entry) {
         return /^\[\[\s*binary data/i.test(entry.text);
     }
@@ -160,7 +147,6 @@ Item {
             return "palette";
         return /\n/.test(entry.text) ? "notes" : "content_paste";
     }
-    // "[[ binary data 12 KiB png 800x600 ]]" -> "PNG image · 800×600 · 12 KiB"
     function describe(entry) {
         var m = entry.text.match(/binary data\s+([\d.]+\s*\w+)\s+(\w+)(?:\s+(\d+x\d+))?/i);
         if (!m)
@@ -171,20 +157,17 @@ Item {
     function escapeHtml(s) {
         return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
-    // One line of the entry with the search match picked out.
     function highlight(text) {
         var flat = text.replace(/\s+/g, " ").trim();
         var q = query.trim();
         var at = q === "" ? -1 : flat.toLowerCase().indexOf(q.toLowerCase());
         if (at === -1)
             return escapeHtml(flat);
-        // Keep the match in view when it sits deep in a long entry.
         var start = at > 40 ? at - 20 : 0;
         var accent = String(Palette.Theme.accent);
         return (start > 0 ? "…" : "") + escapeHtml(flat.slice(start, at)) + "<font color=\"" + accent + "\"><b>" + escapeHtml(flat.slice(at, at + q.length)) + "</b></font>" + escapeHtml(flat.slice(at + q.length));
     }
 
-    // The list runs bottom-to-top, so Up steps to older entries.
     function handleKey(event) {
         if (event.key === Qt.Key_Escape) {
             if (search.text !== "")
@@ -209,9 +192,6 @@ Item {
             event.accepted = true;
         }
     }
-
-    // Hover only selects on real pointer movement, not rows sliding under
-    // a resting cursor while filtering (see Launcher.qml).
     property point lastPointer: Qt.point(-1, -1)
     function hoverSelect(item, mouse, index) {
         var p = item.mapToItem(null, mouse.x, mouse.y);
@@ -225,7 +205,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        // ── entries ───────────────────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -346,8 +325,6 @@ Item {
                         anchors.rightMargin: 10
                         spacing: 12
 
-                        // Thumbnail for images, color swatch for color
-                        // codes, otherwise a kind glyph on a tonal disc.
                         Rectangle {
                             Layout.preferredWidth: row.image ? 56 : 36
                             Layout.preferredHeight: 36
@@ -364,8 +341,6 @@ Item {
                                 id: thumb
                                 anchors.fill: parent
                                 visible: row.image && status === Image.Ready
-                                // previewsReady re-triggers the load once the
-                                // service has decoded the file.
                                 source: !row.image ? "" : "file://" + (row.modelData.pinned ? root.service.pinPath(row.modelData.pid) : root.service.previewPath(row.modelData.id)) + "?" + root.service.previewsReady
                                 sourceSize.width: 112
                                 fillMode: Image.PreserveAspectCrop
@@ -409,9 +384,6 @@ Item {
                                 elide: Text.ElideRight
                             }
                         }
-
-                        // Pin: always shown (in accent) on pinned items,
-                        // otherwise only on the selected row.
                         IconButton {
                             icon: "push_pin"
                             implicitWidth: 30
@@ -455,7 +427,6 @@ Item {
             }
         }
 
-        // ── search bar ────────────────────────────────────────────
         Item {
             id: searchRow
             Layout.fillWidth: true
@@ -464,7 +435,6 @@ Item {
             Rectangle {
                 id: searchField
                 anchors.fill: parent
-                // One even gap on the sides and bottom.
                 anchors.leftMargin: 6
                 anchors.rightMargin: 6
                 anchors.topMargin: 6

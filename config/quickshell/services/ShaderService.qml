@@ -6,7 +6,6 @@ Item {
     id: root
     visible: false
 
-    // "none" (no screen shader) is always first.
     property var shaders: ["none"]
     property string activeShader: "none"
     property bool isPreviewing: false
@@ -84,8 +83,6 @@ Item {
         id: restoreProcess
     }
 
-    // Filenames are the stable shader IDs (used by apply-shader.sh and
-    // decoration:screen_shader), so this is just a display-only prettifier.
     function displayName(shaderName) {
         if (typeof shaderName !== "string")
             return "";

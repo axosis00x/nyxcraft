@@ -12,7 +12,7 @@ Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
@@ -31,13 +31,10 @@ Item {
     property var filteredWallpapers: []
     property string currentWallpaper: ""
 
-    // uniform scale knob — bump this up/down to resize the whole strip at once
     property real s: 1.0
 
     property int focusIndex: 0
-    // continuous chased position — the strip renders from this, not focusIndex
-    // directly, so keyboard autorepeat / wheel bursts stay smooth instead of
-    // snapping tile-to-tile
+
     property real pos: 0
 
     property bool hintShown: false
@@ -105,9 +102,6 @@ Item {
         activeThemeProcess.running = true;
     }
 
-    // Cycling draws from a shuffled bag: every wallpaper in the current set
-    // shows once before any of them repeats, and a refilled bag never starts
-    // with the one already on screen.
     property var shuffleBag: []
 
     function chooseRandomWallpaper() {
@@ -174,8 +168,6 @@ Item {
         onTriggered: root.hintShown = true
     }
 
-    // chases `pos` toward `focusIndex` every frame — this is what gives the
-    // strip its glide instead of an instant jump
     FrameAnimation {
         running: root.visible && root.pos !== root.focusIndex
         onTriggered: {
@@ -307,18 +299,12 @@ Item {
         anchors.fill: parent
         clip: true
 
-        // depth slots: index 0 = focused tile, index 4 = furthest tuned slot,
-        // anything past that extrapolates linearly and fades to invisible
         readonly property var slotW: [196, 126, 104, 88, 74]
         readonly property var slotH: [110, 71, 59, 50, 42]
         readonly property var slotCX: [0, 143, 244, 326, 393]
         readonly property var slotBright: [1, 0.56, 0.42, 0.30, 0.22]
         readonly property var slotSat: [1, 0.65, 0.55, 0.45, 0.40]
 
-        // Horizontal shear applied to each tile so it reads as a slanted
-        // parallelogram card (à la the wallpaperCarousel plugin) rather than
-        // a plain rectangle. The photo inside gets the exact inverse shear
-        // so the image content itself stays undistorted.
         readonly property real skewFactor: -0.32
 
         function slotLerp(arr, ao) {
@@ -408,25 +394,10 @@ Item {
                         radius: tile.corner
                         color: Palette.Theme.surfaceContainerHigh
 
-                        // Plain Rectangle.clip is a scissor test, which is
-                        // always screen-axis-aligned and ignores the shear
-                        // below — it would leave the photo's corners
-                        // uncropped outside the parallelogram outline.
-                        // ClippingRectangle masks via a transformed quad
-                        // instead, so the mask shears along with the card.
-
-                        // Shears the card (and its clip) into a parallelogram,
-                        // pivoted around its own vertical center so the tile
-                        // stays put inside the slot geometry computed above.
                         transform: Matrix4x4 {
                             matrix: Qt.matrix4x4(1, panel.skewFactor, 0, -panel.skewFactor * tile.height / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
                         }
 
-                        // Always layered (not just past a saturation
-                        // threshold) — toggling the layer on/off mid-slide
-                        // switched this between direct and offscreen-texture
-                        // rendering every time a tile crossed that threshold,
-                        // which visibly popped against the sheared transform.
                         layer.enabled: tile.visible
                         layer.effect: MultiEffect {
                             saturation: tile.sat - 1
@@ -437,9 +408,7 @@ Item {
                         }
 
                         Image {
-                            // Oversized and inverse-sheared so the photo itself
-                            // renders undistorted while still fully covering
-                            // the card's now-parallelogram clip region.
+
                             width: tile.width + Math.abs(panel.skewFactor) * tile.height + 4
                             height: tile.height
                             anchors.centerIn: parent
@@ -473,8 +442,6 @@ Item {
                             visible: tile.isActiveWallpaper
                             color: Palette.Theme.accent
 
-                            // Counter-sheared so the badge stays a circle
-                            // instead of inheriting the card's slant.
                             transform: Matrix4x4 {
                                 matrix: Qt.matrix4x4(1, -panel.skewFactor, 0, panel.skewFactor * activeBadge.height / 2, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
                             }
@@ -547,8 +514,6 @@ Item {
             }
         }
 
-        // exposes panel.pos so tiles above can read `off` without root having
-        // to forward it manually — mirrors root.pos in the reference
         property alias pos_: root.pos
 
         MouseArea {

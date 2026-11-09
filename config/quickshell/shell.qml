@@ -36,7 +36,7 @@ ShellRoot {
         settingsWindow: settingsWindow
         widgetsService: widgetsService
     }
-    // Settings → Customize: loaded first thing, applied to the theme tokens.
+
     ShellSettings {
         id: shellSettings
     }
@@ -47,7 +47,7 @@ ShellRoot {
         widgetsService: widgetsService
         themeService: overlay.themes
         barLayout: barLayoutService
-        // A centered window and the overlay both grab the keyboard, so only one at a time.
+
         onAboutToOpen: overlay.closeActive()
     }
     WorkspacesService {
@@ -60,17 +60,14 @@ ShellRoot {
     Osd {
         id: mainOsd
     }
-    // Rounded screen corners and edge frame, in notch mode.
+
     ScreenFrame {
         barLayout: barLayoutService
     }
     LockScreen {
         id: lockScreen
     }
-    // Never hot-reload while the session is locked: a reload tears down the
-    // lock surfaces mid-lock, which aborts Quickshell ("Tried to show
-    // lockscreen surfaces without active lock") and leaves Hyprland on its
-    // crashed-lockscreen screen. Edits made while locked apply on unlock.
+
     Binding {
         target: Quickshell
         property: "watchFiles"
@@ -91,12 +88,12 @@ ShellRoot {
         function close(): void {
             root.closeControlCenter();
         }
-        // Straight to a dashboard tab: overview, controls, notifications, performance.
+
         function tab(name: string): void {
             if (overlay.controlCenter)
                 overlay.controlCenter.openTab(name);
         }
-        // Straight to the Wi-Fi / Bluetooth lists.
+
         function wifi(): void {
             root.openControlCenterDetail("wifi");
         }
@@ -136,19 +133,11 @@ ShellRoot {
     IpcHandler {
         target: "shell"
         function reload(): void {
-            // Same reason as watchFiles above.
             if (!lockScreen.isLocked)
                 Quickshell.reload(false);
         }
     }
-    // Deferred behind barLayoutService.loaded: BarLayoutService's persisted
-    // "vertical" value briefly holds its declared default before the
-    // JSON file underneath it actually resolves, and the bar's anchors bind
-    // to that value directly with no QML Behavior to smooth it over — so a
-    // wrong-then-right flip on reload isn't an animation to suppress, it's
-    // the compositor reacting to two real geometry changes. Not
-    // constructing the bar at all until the real value is in means it only
-    // ever gets built once, with the right one.
+
     Loader {
         id: barLoader
         active: barLayoutService.loaded

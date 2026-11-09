@@ -12,15 +12,14 @@ Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
 
     property real maxWidth: 4000
     property real maxHeight: 4000
     property var notificationCenter
     property var bar
-    // The media panel, whose player choice and cached cover art the
-    // dashboard's media views reuse.
+
     property var media: null
     property var idleService: null
     property string powerProfile: "balanced"
@@ -32,10 +31,6 @@ Item {
     property bool micMuted: false
     property string detailMode: "none"
 
-    // Wi-Fi, wired and Bluetooth state comes live from Quickshell's
-    // NetworkManager and BlueZ bindings (as the bar's NetworkIcon does) —
-    // no polling, no parsing nmcli/bluetoothctl output, and passwords go
-    // over D-Bus rather than onto a command line.
     readonly property var wifiDevice: Networking.devices.values.find(d => d.type === DeviceType.Wifi) || null
     readonly property var wiredDevice: Networking.devices.values.find(d => d.type === DeviceType.Wired) || null
     readonly property bool wifiEnabled: Networking.wifiEnabled
@@ -46,25 +41,18 @@ Item {
     readonly property bool wifiScanning: wifiDevice ? wifiDevice.scannerEnabled : false
     readonly property bool bluetoothScanning: bluetoothAdapter ? bluetoothAdapter.discovering : false
 
-    // Detail lists: connected first, then saved/paired, then the rest.
     readonly property var wifiNetworks: wifiDevice ? wifiDevice.networks.values.filter(n => n.name !== "").sort((a, b) => wifiRank(b) - wifiRank(a) || b.signalStrength - a.signalStrength) : []
-    // Unpaired devices only once they advertise a real name, so the list
-    // isn't a wall of bare addresses while discovering.
+
     readonly property var bluetoothDevices: bluetoothAdapter ? bluetoothAdapter.devices.values.filter(d => d.paired || d.connected || d.deviceName !== "").sort((a, b) => bluetoothRank(b) - bluetoothRank(a) || a.name.localeCompare(b.name)) : []
 
-    // Wi-Fi password prompt.
     property var authNetwork: null
     property bool authVisible: false
     property bool authBusy: false
     property string authError: ""
 
-    // The network / device a connect is in flight for. A first attempt on
-    // an unsaved network remembers that, so a failure can drop the profile
-    // NetworkManager saved with the bad password.
     property var pendingNetwork: null
     property bool pendingWasKnown: false
-    // Prompt dismissed while connecting: report a failure as a
-    // notification instead of popping the prompt back up.
+
     property bool pendingQuiet: false
     property var pendingDevice: null
     property bool pendingDeviceConnecting: false
@@ -72,26 +60,19 @@ Item {
     property bool showBrightnessOsdOnRead: false
     property bool showMicOsdOnRead: false
     readonly property bool dndEnabled: toggleState.dnd
-    // Purely a mirror of toggleState.hyprsunset (readonly, never assigned
-    // directly) so it can't fall out of sync with what's on disk — the
-    // same pattern services/BarLayoutService.qml uses for `vertical`.
+
     readonly property bool hyprsunsetEnabled: toggleState.hyprsunset
-    // Screen color temperature (K) and gamma (%): a soft, slightly dimmed
-    // daylight when the Night toggle is off (neutral ~6500 K at full gamma
-    // reads cold and harsh), warm and dimmer when it's on. The day values
-    // match hypr/modules/autostarts.lua.
+
     readonly property int dayTemperature: 3500
     readonly property int dayGamma: 90
-    // Night values are adjustable (Settings → Display) and saved with the
-    // toggles; the Night toggle applies whatever they're set to.
+
     readonly property int nightTemperature: toggleState.nightTemperature
     readonly property int nightGamma: toggleState.nightGamma
 
     function setNightTone(temperature, gamma) {
         toggleState.nightTemperature = Math.round(Math.max(1900, Math.min(4500, temperature)) / 50) * 50;
         toggleState.nightGamma = Math.round(Math.max(50, Math.min(100, gamma)));
-        // Drags change these many times a second: apply and save once
-        // they settle.
+
         nightToneApply.restart();
     }
 
@@ -109,7 +90,7 @@ Item {
         hyprsunsetSet.exec(["sh", "-c", "hyprctl hyprsunset temperature \"$1\" && hyprctl hyprsunset gamma \"$2\"", "hyprsunset", String(night ? nightTemperature : dayTemperature), String(night ? nightGamma : dayGamma)]);
     }
     property string powerProfilePending: ""
-    // Owned and persisted by IdleService, which is what actually enforces it.
+
     readonly property bool keepAwake: idleService ? idleService.keepAwake : false
 
     readonly property real minLevel: 0.05
@@ -117,21 +98,32 @@ Item {
     readonly property int notificationCount: notificationCenter ? notificationCenter.count : 0
     readonly property bool showingDetail: detailMode !== "none"
 
-    // ── dashboard tabs (Caelestia-style) ───────────────────────────
-    // Overview opens first; the controls that used to be the whole panel
-    // are the second tab. The last tab used is kept while the shell runs.
     readonly property var tabs: [
-        { id: "overview", icon: "dashboard", label: "Overview" },
-        { id: "controls", icon: "settings_suggest", label: "Controls" },
-        { id: "notifications", icon: "notifications", label: "Notifications" },
-        { id: "performance", icon: "speed", label: "Performance" }
+        {
+            id: "overview",
+            icon: "dashboard",
+            label: "Overview"
+        },
+        {
+            id: "controls",
+            icon: "settings_suggest",
+            label: "Controls"
+        },
+        {
+            id: "notifications",
+            icon: "notifications",
+            label: "Notifications"
+        },
+        {
+            id: "performance",
+            icon: "speed",
+            label: "Performance"
+        }
     ]
     property int tab: 0
     onVisibleChanged: if (visible)
         overviewPage.reset()
 
-    // Opens straight onto a tab by id (overview, controls, notifications,
-    // performance); IPC: qs ipc call controlcenter tab notifications
     function openTab(id) {
         var i = tabs.findIndex(t => t.id === id);
         if (i < 0)
@@ -141,16 +133,11 @@ Item {
             openControlCenter();
     }
 
-    // Shorter than the old standalone panel: the notifications list scrolls.
-    // Toggles and sliders only; notifications have their own tab.
-    // Sized to its contents plus the same 10px margin all round.
     readonly property real controlsHeight: showingDetail ? Math.max(320, Math.min(maxHeight - 4, 380)) : controlsColumn.implicitHeight + 20
     readonly property real pageHeight: [overviewPage.implicitHeight, controlsHeight, notificationsPage.implicitHeight, performancePage.implicitHeight][tab]
 
-    // Width from Settings → Customize (clamped there), never wider than the screen.
     implicitWidth: Math.max(380, Math.min(maxWidth - 2, Palette.Theme.controlCenterWidth))
-    // The tab row sits a little below the top edge; count that offset too,
-    // or it comes out of the gap at the bottom of every page.
+
     implicitHeight: Math.min(maxHeight - 4, dashTabs.anchors.topMargin + dashTabs.implicitHeight + pageHeight)
 
     SystemStats {
@@ -161,14 +148,13 @@ Item {
     signal aboutToOpen
     signal aboutToClose
 
-    // Toggle states, saved explicitly (writes during loading reset them).
     FileView {
         id: toggleStateFile
         path: Quickshell.cachePath("control-center-toggles.json")
         watchChanges: false
         blockLoading: true
         onLoaded: root.restoreToggles()
-        // First run (no file yet): the defaults are the state.
+
         onLoadFailed: root.restoreToggles()
 
         JsonAdapter {
@@ -183,9 +169,6 @@ Item {
 
     Component.onCompleted: readPowerProfile()
 
-    // Re-applies the saved toggles once the file has actually been read:
-    // at Component.onCompleted the adapter still holds its defaults, which
-    // turned the night light off on every reload while the toggle showed on.
     property bool togglesRestored: false
     function restoreToggles() {
         if (togglesRestored)
@@ -196,7 +179,7 @@ Item {
                 root.notificationCenter.setDnd(true);
             setExternalDnd(true);
         }
-        // Day or night tone, whichever the toggle was left on.
+
         root.applyScreenTone(toggleState.hyprsunset);
     }
 
@@ -274,9 +257,7 @@ Item {
         detailMode = detailMode === "wifi" ? "none" : "wifi";
     }
 
-    // Scan / discover only while the matching list is open.
     onDetailModeChanged: {
-        // The Wi-Fi / Bluetooth lists live on the controls tab.
         if (detailMode !== "none")
             tab = 1;
         if (wifiDevice)
@@ -289,7 +270,6 @@ Item {
         wifiDevice.scannerEnabled = detailMode === "wifi"
     onBluetoothEnabledChanged: setDiscovering(detailMode === "bluetooth")
 
-    // ── Wi-Fi ───────────────────────────────────────────────────────
     readonly property var enterpriseSecurity: [WifiSecurityType.Wpa3SuiteB192, WifiSecurityType.Wpa2Eap, WifiSecurityType.WpaEap, WifiSecurityType.DynamicWep, WifiSecurityType.Leap]
 
     function wifiRank(n) {
@@ -308,9 +288,6 @@ Item {
         return n.security === WifiSecurityType.StaticWep;
     }
 
-    // WPA/SAE: 8–63 characters or a 64-digit hex key. WEP: 5/13 characters
-    // or 10/26 hex digits. Checked before sending so a typo fails here, not
-    // after a 20 s handshake.
     function validPassword(n, psk) {
         if (!n)
             return false;
@@ -351,8 +328,7 @@ Item {
             n.disconnect();
             return;
         }
-        // 802.1X needs identity/certificates the prompt doesn't collect;
-        // hand those to nmtui (floated by the wiremix/nmtui window rule).
+
         if (isEnterpriseNetwork(n) && !n.known) {
             Quickshell.execDetached(["kitty", "--class", "nmtui", "-e", "nmtui-connect", n.name]);
             return;
@@ -422,8 +398,7 @@ Item {
                 cancelWifiAuth();
             return;
         }
-        // NetworkManager keeps the profile from a failed first attempt,
-        // bad password and all, and would silently retry it next time.
+
         if (!wasKnown && n.known)
             n.forget();
         if (isOpenNetwork(n) || pendingQuiet) {
@@ -437,7 +412,6 @@ Item {
         Quickshell.execDetached(["notify-send", "-a", "Control center", title, body]);
     }
 
-    // ── Bluetooth ───────────────────────────────────────────────────
     function setDiscovering(on) {
         var a = bluetoothAdapter;
         if (a && a.enabled && a.discovering !== on)
@@ -456,7 +430,6 @@ Item {
         return d.pairing || d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting;
     }
 
-    // BlueZ icon names -> Material Symbols.
     function bluetoothDeviceIcon(d) {
         var map = {
             "audio-headset": "headset_mic",
@@ -491,8 +464,6 @@ Item {
         return d.connected ? "Disconnect" : (d.paired ? "Connect" : "Pair");
     }
 
-    // Unpaired devices are paired, trusted (so they reconnect on their own
-    // later) and connected in one go; see the Connections on pendingDevice.
     function activateBluetooth(d) {
         if (!d || bluetoothBusy(d))
             return;
@@ -555,7 +526,7 @@ Item {
             a.enabled = false;
             return;
         }
-        // BlueZ refuses to power on while rfkill blocks the radio.
+
         if (a.state === BluetoothAdapterState.Blocked)
             rfkillUnblock.exec(["rfkill", "unblock", "bluetooth"]);
         else
@@ -601,7 +572,6 @@ Item {
         volumeMute.exec(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
     }
 
-    // Own window class so Hyprland floats and centers it (windowrules.lua).
     function openWiremix() {
         wiremixLaunch.exec(["kitty", "--class", "wiremix", "-e", "wiremix"]);
     }
@@ -674,7 +644,6 @@ Item {
         return root.ethernetConnected || root.wifiEnabled;
     }
 
-    // The connected network's name rather than just "Wi-Fi".
     function networkSubtitle() {
         var current = root.wifiDevice ? root.wifiDevice.networks.values.find(n => n.connected) : null;
         if (root.ethernetConnected)
@@ -696,9 +665,6 @@ Item {
         return "\ue8d4";
     }
 
-    // Each power profile gets its own silhouette, not just a color swap —
-    // power-saver is a calm full circle, performance is a sharp-cornered
-    // square, balanced sits in between as a plain rounded square.
     function powerProfileShapeRadius() {
         if (root.powerProfile === "power-saver")
             return 31;
@@ -749,7 +715,6 @@ Item {
         if (hyprsunsetEnabled) {
             root.applyScreenTone(true);
         } else {
-            // Back to the daytime tone, in place (restarting hyprsunset would flash).
             root.applyScreenTone(false);
         }
     }
@@ -796,7 +761,6 @@ Item {
         }
     }
 
-    // Backstop for a connect that neither succeeds nor reports failure.
     Timer {
         id: connectTimeout
         interval: 45000
@@ -1003,9 +967,6 @@ Item {
         }
     }
 
-    // The controls tab: the original control center (tiles, sliders,
-    // toggles, notifications and the Wi-Fi / Bluetooth lists), unchanged,
-    // sliding in and out like the other pages.
     RowLayout {
         id: controlsPage
         anchors.fill: pageArea
@@ -1060,16 +1021,12 @@ Item {
                     anchors.margins: 10
                     spacing: 10
 
-                    // The glyph matrix beside the two connection cards, as one
-                    // block of equal height.
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
 
-                        // A square glyph as tall as both cards together.
                         PixelGlyphPanel {
-                            // Can be switched off in Settings → Customize; the
-                            // connection cards then take the whole row.
+
                             visible: Palette.Theme.showGlyph
                             Layout.preferredWidth: connectionRows.implicitHeight
                             Layout.preferredHeight: connectionRows.implicitHeight
@@ -1103,7 +1060,6 @@ Item {
                         }
                     }
 
-                    // Keep the original slider and square-toggle pairing.
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
@@ -1212,7 +1168,6 @@ Item {
                             }
                         }
                     }
-
                 }
             }
 
@@ -1224,8 +1179,7 @@ Item {
                 scale: root.showingDetail ? 1 : 0.98
                 transformOrigin: Item.Top
                 enabled: root.showingDetail
-                // Hidden once faded out: a merely disabled item still takes
-                // hover, which blocked the controls underneath.
+
                 visible: opacity > 0.01
 
                 Behavior on opacity {
@@ -1298,8 +1252,7 @@ Item {
                             anchors.fill: parent
                             clip: true
                             spacing: 0
-                            // Live NetworkManager / BlueZ objects, so rows
-                            // update in place as state changes.
+
                             model: root.detailMode === "wifi" ? root.wifiNetworks : root.bluetoothDevices
                             cacheBuffer: 240
                             currentIndex: -1
@@ -1328,7 +1281,6 @@ Item {
 
                                 width: ListView.view.width
 
-                                // Section header above the first row of each group.
                                 Text {
                                     visible: entry.firstOfSection
                                     text: entry.section
@@ -1363,7 +1315,6 @@ Item {
                     }
                 }
 
-                // Wi-Fi password prompt, over the network list.
                 Item {
                     id: authLayer
 
@@ -1382,7 +1333,7 @@ Item {
 
                     Connections {
                         target: root
-                        // Fresh prompt: empty, hidden field with focus.
+
                         function onAuthVisibleChanged() {
                             if (!root.authVisible)
                                 return;
@@ -1390,8 +1341,7 @@ Item {
                             authLayer.reveal = false;
                             authPasswordInput.forceActiveFocus();
                         }
-                        // Failed attempt: keep what was typed, selected, so
-                        // it can be fixed or retyped straight away.
+
                         function onAuthErrorChanged() {
                             if (root.authError === "")
                                 return;
@@ -1425,8 +1375,7 @@ Item {
                         }
 
                         MouseArea {
-                            // Swallows clicks so the scrim behind doesn't
-                            // treat interacting with the card as "cancel".
+
                             anchors.fill: parent
                         }
 
@@ -1551,7 +1500,6 @@ Item {
                                 }
                             }
 
-                            // Busy, error, or what a valid password looks like.
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 6

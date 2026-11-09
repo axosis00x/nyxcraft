@@ -7,9 +7,8 @@ ColumnLayout {
     id: root
 
     required property var notificationCenter
-    required property var group // { appName, items: [...] }
-    // The newest group shows its top card in full; the rest are compact
-    // (they open on hover), so the list has a clear size hierarchy.
+    required property var group
+
     property bool featured: true
     readonly property bool expanded: notificationCenter ? notificationCenter.isExpanded(group.appName) : false
     readonly property bool hasStack: group.items.length > 1
@@ -18,8 +17,7 @@ ColumnLayout {
 
     Item {
         Layout.fillWidth: true
-        // The two offset stack layers extend below the main card. Include that
-        // depth in the delegate size so they cannot overlap the next group.
+
         implicitHeight: topCard.implicitHeight + (!root.expanded ? Math.min(2, root.group.items.length - 1) * 6 : 0)
 
         Repeater {
@@ -52,9 +50,7 @@ ColumnLayout {
             bodyText: root.notificationCenter ? root.notificationCenter.scrub(root.group.items[0].body) : ""
             actionTarget: root.notificationCenter ? root.notificationCenter.liveNotification(root.group.items[0]) : null
             canDismiss: root.group.items[0].live
-            dismissOnActivate: !root.hasStack
-                && root.notificationCenter
-                && root.notificationCenter.hasDefaultAction(root.group.items[0])
+            dismissOnActivate: !root.hasStack && root.notificationCenter && root.notificationCenter.hasDefaultAction(root.group.items[0])
             expandable: root.hasStack
             expanded: root.expanded
             onDismissed: root.notificationCenter.dismissRecord(root.group.items[0])
@@ -91,5 +87,4 @@ ColumnLayout {
             }
         }
     }
-
 }

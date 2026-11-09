@@ -1,16 +1,12 @@
 import Quickshell.Io
 import QtQuick
 
-// Live CPU, memory, disk and temperature readings for the dashboard. Polls
-// only while `running` (the dashboard is on screen), so a closed control
-// center costs nothing.
 Item {
     id: root
     visible: false
 
     property bool running: false
 
-    // 0–1 fractions, plus the raw numbers for captions.
     property real cpu: 0
     property real memory: 0
     property real disk: 0
@@ -18,8 +14,7 @@ Item {
     property real memoryTotal: 0
     property real diskUsed: 0
     property real diskTotal: 0
-    // Degrees Celsius of the CPU package (or the hottest zone), and the same
-    // as a 0–1 fraction of 100 °C for a gauge.
+
     property real temperature: 0
     readonly property real temperatureFraction: Math.min(1, temperature / 100)
 
@@ -40,8 +35,6 @@ Item {
         }
     }
 
-    // CPU load is the difference between two readings, so right after
-    // starting, take the second one quickly instead of showing 0% for a tick.
     Timer {
         id: secondSample
         interval: 350
@@ -53,7 +46,6 @@ Item {
     onRunningChanged: if (!running)
         lastCpu = null
 
-    // Disk usage changes slowly; read it less often.
     Timer {
         interval: 30000
         running: root.running
@@ -65,13 +57,9 @@ Item {
         }
     }
 
-    // One process per tick: the CPU line of /proc/stat, two meminfo lines,
-    // and the package temperature (x86_pkg_temp, else the hottest zone).
     Process {
         id: sample
-        command: ["sh", "-c", "head -1 /proc/stat; grep -E '^(MemTotal|MemAvailable):' /proc/meminfo; "
-            + "t=''; for z in /sys/class/thermal/thermal_zone*; do [ \"$(cat \"$z/type\" 2>/dev/null)\" = x86_pkg_temp ] && t=$(cat \"$z/temp\"); done; "
-            + "[ -n \"$t\" ] || t=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1); echo \"temp ${t:-0}\""]
+        command: ["sh", "-c", "head -1 /proc/stat; grep -E '^(MemTotal|MemAvailable):' /proc/meminfo; " + "t=''; for z in /sys/class/thermal/thermal_zone*; do [ \"$(cat \"$z/type\" 2>/dev/null)\" = x86_pkg_temp ] && t=$(cat \"$z/temp\"); done; " + "[ -n \"$t\" ] || t=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1); echo \"temp ${t:-0}\""]
         stdout: StdioCollector {
             onStreamFinished: root.parse(text)
         }
@@ -105,7 +93,10 @@ Item {
                 }
                 if (!root.lastCpu)
                     secondSample.restart();
-                root.lastCpu = { total: total, idle: idle };
+                root.lastCpu = {
+                    total: total,
+                    idle: idle
+                };
             } else if (f[0] === "MemTotal:") {
                 memTotal = Number(f[1]) * 1024;
             } else if (f[0] === "MemAvailable:") {

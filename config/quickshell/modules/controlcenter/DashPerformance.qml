@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import "../../theme" as Palette
 
-// The dashboard's performance tab: large live gauges for CPU, memory, disk
-// and temperature, each with the numbers behind it.
 Item {
     id: root
 
@@ -51,7 +49,7 @@ Item {
                 thickness: 6
                 value: root.stats ? root.stats.temperatureFraction : 0
                 text: root.stats ? Math.round(root.stats.temperature) + "°C" : "--"
-                // Warm colours only when it actually runs hot.
+
                 accent: root.stats && root.stats.temperature >= 85 ? Palette.Theme.errorColor : root.stats && root.stats.temperature >= 70 ? Palette.Theme.warning : Palette.Theme.aqua
                 label: "Temperature"
                 caption: "CPU package"

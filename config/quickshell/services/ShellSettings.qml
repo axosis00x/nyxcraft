@@ -3,13 +3,10 @@ import Quickshell.Io
 import QtQuick
 import "../theme" as Palette
 
-// Settings → Customize, saved to JSON. Every value is clamped to a safe
-// range; anything missing or invalid falls back to the stock default.
 Item {
     id: root
     visible: false
 
-    // The stock look; Reset brings these back.
     readonly property var defaults: ({
             roundness: 1.0,
             controlCenterWidth: 480,
@@ -22,7 +19,7 @@ Item {
             clockSeconds: false,
             clock24h: false
         })
-    // [min, max] for the numeric settings.
+
     readonly property var ranges: ({
             roundness: [0, 1.5],
             controlCenterWidth: [420, 560],
@@ -41,7 +38,7 @@ Item {
             return fallback;
         var r = ranges[key];
         n = Math.max(r[0], Math.min(r[1], n));
-        // An even width keeps the control center's layout on whole pixels.
+
         return key === "controlCenterWidth" ? Math.round(n / 2) * 2 : n;
     }
 
@@ -54,8 +51,7 @@ Item {
             return;
         store[key] = clean(key, value);
         apply();
-        // Persist the glyph toggle immediately so a quick config reload
-        // cannot interrupt the debounce timer before it writes the change.
+
         if (key === "showGlyph")
             saveNow();
         else
@@ -74,7 +70,6 @@ Item {
         settingsFile.writeAdapter();
     }
 
-    // Pushes the (cleaned) values into the theme, where everything reads them.
     function apply() {
         Palette.Theme.roundness = get("roundness");
         Palette.Theme.controlCenterWidth = get("controlCenterWidth");
@@ -88,7 +83,6 @@ Item {
         Palette.Theme.clock24h = get("clock24h");
     }
 
-    // Sliders change values many times a second; save once they settle.
     Timer {
         id: saveTimer
         interval: 400
@@ -99,7 +93,7 @@ Item {
         id: settingsFile
         path: Quickshell.cachePath("shell-settings.json")
         watchChanges: false
-        // Apply saved values before the settings UI and theme are created.
+
         blockLoading: true
         onLoaded: root.apply()
         onLoadFailed: error => {

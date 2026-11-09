@@ -5,22 +5,20 @@ import QtQuick.Layouts
 import "../../theme" as Palette
 import "../../components/material"
 
-// The shell's polkit agent: asks for the password from the top notch
-// when an app needs privileges. Only one agent can run per session.
 Item {
     id: root
 
     visible: false
-    // Still visible while the close delay runs, but on its way out.
+
     readonly property bool closing: closeTimer.running
     focus: visible
 
     property real maxWidth: 4000
 
     readonly property var flow: agent.flow
-    // Waiting on polkit after a submit, until it asks again or finishes.
+
     property bool busy: false
-    // Set when polkit rejects a password, until the next keystroke.
+
     property bool wrong: false
 
     implicitWidth: Math.min(maxWidth - 24, 380)
@@ -73,8 +71,6 @@ Item {
         field.forceActiveFocus();
     }
 
-    // Closing while a request is still pending (Esc, Cancel, a click
-    // outside) cancels it, so the asking app gets a clean "dismissed".
     function close() {
         if (agent.isActive && flow && !flow.isCompleted)
             flow.cancelAuthenticationRequest();
@@ -105,14 +101,37 @@ Item {
 
     Keys.onEscapePressed: root.close()
 
-    // A short side-to-side shake when the password is wrong.
     SequentialAnimation {
         id: shake
         loops: 1
-        NumberAnimation { target: content; property: "anchors.horizontalCenterOffset"; to: -10; duration: 50; easing.type: Easing.OutCubic }
-        NumberAnimation { target: content; property: "anchors.horizontalCenterOffset"; to: 8; duration: 70; easing.type: Easing.InOutCubic }
-        NumberAnimation { target: content; property: "anchors.horizontalCenterOffset"; to: -5; duration: 60; easing.type: Easing.InOutCubic }
-        NumberAnimation { target: content; property: "anchors.horizontalCenterOffset"; to: 0; duration: 60; easing.type: Easing.OutCubic }
+        NumberAnimation {
+            target: content
+            property: "anchors.horizontalCenterOffset"
+            to: -10
+            duration: 50
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: content
+            property: "anchors.horizontalCenterOffset"
+            to: 8
+            duration: 70
+            easing.type: Easing.InOutCubic
+        }
+        NumberAnimation {
+            target: content
+            property: "anchors.horizontalCenterOffset"
+            to: -5
+            duration: 60
+            easing.type: Easing.InOutCubic
+        }
+        NumberAnimation {
+            target: content
+            property: "anchors.horizontalCenterOffset"
+            to: 0
+            duration: 60
+            easing.type: Easing.OutCubic
+        }
     }
 
     ColumnLayout {
@@ -123,7 +142,6 @@ Item {
         width: parent.width - 40
         spacing: 0
 
-        // Header, centred: lock badge, title, the asking app's message.
         Rectangle {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: 52
@@ -171,8 +189,6 @@ Item {
             visible: text !== ""
         }
 
-        // Who's authenticating. With several admin identities, click the
-        // name to switch between them.
         Row {
             id: identityRow
 
@@ -223,7 +239,6 @@ Item {
             }
         }
 
-        // The password (or whatever polkit's prompt asks for).
         Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: 16
@@ -309,7 +324,6 @@ Item {
             }
         }
 
-        // polkit's own notes, or ours when the password was wrong.
         Text {
             Layout.fillWidth: true
             Layout.topMargin: 8
@@ -323,7 +337,6 @@ Item {
             wrapMode: Text.WordWrap
         }
 
-        // Two equal buttons: cancel (tonal) and authenticate (filled).
         RowLayout {
             Layout.fillWidth: true
             Layout.topMargin: 12
@@ -344,7 +357,6 @@ Item {
             }
         }
 
-        // Which polkit action this is, for the curious.
         Text {
             Layout.fillWidth: true
             Layout.topMargin: 12
@@ -358,7 +370,6 @@ Item {
         }
     }
 
-    // A dialog button: same height and corners as the field above.
     component DialogButton: Rectangle {
         id: button
 

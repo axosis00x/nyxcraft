@@ -3,9 +3,6 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// A connection card. Clicking it toggles its radio; the arrow (or a right
-// click) opens the network or device list. On, it fills with tonal accent and
-// its corners round out further.
 Rectangle {
     id: root
 
@@ -52,7 +49,6 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        // Even sides: the icon disc and the chevron glyph sit 12 px in.
         anchors.leftMargin: 12
         anchors.rightMargin: 7
         spacing: 10

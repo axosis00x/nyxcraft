@@ -5,10 +5,6 @@ import "../../theme" as Palette
 Text {
     id: root
 
-    // Stacked mode splits hours/minutes onto two centered lines ("12"
-    // over "00") instead of one "12:00" row — used by the vertical bar,
-    // where a wide inline time doesn't fit as comfortably.
-
     text: Qt.formatDateTime(clock.date, "hh:mm")
     horizontalAlignment: Text.AlignHCenter
 

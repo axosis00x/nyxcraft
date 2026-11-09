@@ -11,12 +11,10 @@ Item {
     property string title: ""
     property string subtitle: ""
     property bool active: false
-    // Label for the row's action button (e.g. "Connect" / "Disconnect").
-    // Empty hides the button entirely.
+
     property string actionLabel: ""
     signal actionClicked
 
-    // The list draws one gliding hover highlight behind its rows.
     readonly property bool hovered: rowMouse.containsMouse
 
     implicitWidth: 1

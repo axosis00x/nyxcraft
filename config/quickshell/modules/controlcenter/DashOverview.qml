@@ -7,20 +7,16 @@ import "../../services"
 import "../../services/weather"
 import "../../theme" as Palette
 
-// The dashboard's first tab, kept minimal: who and when on top, the
-// calendar and system gauges, and what's playing.
 Item {
     id: root
 
-    // The media panel, whose player choice and cached cover art this reuses.
     property var media: null
     property var stats: null
-    // Refreshes uptime while the tab is on screen.
+
     property bool active: false
 
     implicitHeight: grid.implicitHeight + 22
 
-    // ── data ───────────────────────────────────────────────────────
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
@@ -28,7 +24,6 @@ Item {
 
     readonly property var weather: WeatherService
 
-    // Back to the current month each time the dashboard opens.
     function reset() {
         calendar.reset();
     }
@@ -52,7 +47,7 @@ Item {
             onStreamFinished: {
                 var s = Math.floor(Number(text.split(" ")[0]) || 0);
                 var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
-                // Short, so it fits the card: "up 2h 14m", "up 3d 5h".
+
                 root.uptime = "up " + (d > 0 ? d + "d " + h + "h" : h > 0 ? h + "h " + m + "m" : m + "m");
             }
         }
@@ -66,7 +61,6 @@ Item {
         onTriggered: uptimeRead.running = true
     }
 
-    // Keep the progress line moving while a track plays.
     Timer {
         interval: 1000
         running: root.active && root.media && root.media.hasPlayer && root.media.player.isPlaying
@@ -79,13 +73,10 @@ Item {
         return h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
     }
 
-    // ── layout ─────────────────────────────────────────────────────
-    // A plain header (you on the left, the time on the right), then the
-    // calendar beside the system gauges, then a slim now-playing strip.
     ColumnLayout {
         id: grid
         anchors.fill: parent
-        // One even gap all round, matching the cards' concentric corners.
+
         anchors.margins: 10
         anchors.topMargin: 12
         spacing: 10
@@ -207,7 +198,6 @@ Item {
             }
         }
 
-        // Now playing, in one row.
         DashCard {
             id: nowPlaying
             Layout.fillWidth: true

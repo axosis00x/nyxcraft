@@ -5,20 +5,14 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// Small interactive month calendar, hosted in the shared bottom stage
-// (components/overlay/CenterOverlay.qml) alongside Clipboard/ThemePicker/etc.
 Item {
     id: root
     visible: false
-    // Still visible while the close delay runs, but on its way out.
     readonly property bool closing: closeTimer.running
     focus: visible
 
     property real maxWidth: 4000
     property real maxHeight: 4000
-
-    // Same width as the launcher/clipboard/theme picker; height fits the
-    // month (5 or 6 weeks) rather than a fixed box.
     implicitWidth: Math.min(maxWidth - 32, Palette.Theme.listPanelWidth)
     implicitHeight: Math.min(maxHeight - 12, content.implicitHeight + 28)
 
@@ -133,9 +127,6 @@ Item {
         root.viewMonth = root.today.getMonth();
         root.selectDay(root.today.getDate());
     }
-
-    // Only as many weeks as the month spans (4–6). Slots outside the month
-    // show the neighbouring months' days, dimmed; their `day` is 0.
     readonly property var dayModel: {
         var lead = firstWeekday(viewYear, viewMonth);
         var total = daysInMonth(viewYear, viewMonth);
@@ -145,16 +136,26 @@ Item {
         for (var i = 0; i < slots; i++) {
             var day = i - lead + 1;
             if (day < 1)
-                out.push({ day: 0, label: prevTotal + day, weekday: i % 7 });
+                out.push({
+                    day: 0,
+                    label: prevTotal + day,
+                    weekday: i % 7
+                });
             else if (day > total)
-                out.push({ day: 0, label: day - total, weekday: i % 7 });
+                out.push({
+                    day: 0,
+                    label: day - total,
+                    weekday: i % 7
+                });
             else
-                out.push({ day: day, label: day, weekday: i % 7 });
+                out.push({
+                    day: day,
+                    label: day,
+                    weekday: i % 7
+                });
         }
         return out;
     }
-
-    // "Today" / "Tomorrow" / "In 3 days" / "5 days ago" for the selection.
     readonly property string selectedRelative: {
         var t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         var s = new Date(selectedYear, selectedMonth, selectedDay);
@@ -176,7 +177,6 @@ Item {
         anchors.margins: 14
         spacing: 12
 
-        // ── header: month, navigation ────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             Layout.leftMargin: 6
@@ -229,14 +229,12 @@ Item {
             }
         }
 
-        // ── weekdays + days ──────────────────────────────────────────
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: grid.implicitHeight + 16
             radius: Palette.Theme.radiusMedium
             color: Palette.Theme.surfaceContainer
 
-            // Wheel steps through months.
             WheelHandler {
                 acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                 onWheel: event => {
@@ -297,8 +295,6 @@ Item {
                             anchors.centerIn: parent
                             width: 32
                             height: 32
-                            // Keep selected and today markers on the same
-                            // roundness scale as the rest of the interface.
                             radius: Math.min(width / 2, Palette.Theme.radiusSmall)
                             color: cell.today ? Palette.Theme.accent : (cell.selected ? Palette.Theme.accentTonal : "transparent")
 
@@ -338,7 +334,6 @@ Item {
             }
         }
 
-        // ── selected date ───────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             Layout.leftMargin: 6

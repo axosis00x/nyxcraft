@@ -6,10 +6,6 @@ import QtQuick.Effects
 import "../theme" as Palette
 import "../components/material"
 
-// Desktop audio visualizer: cava's spectrum drawn as layered rolling hills
-// (WaveVisualizer), instead of discrete bars. Sits on the same translucent
-// card as the clock and weather widgets. cava only runs while some MPRIS
-// player is playing; when playback stops the hills ease back down flat.
 Item {
     id: root
 
@@ -18,20 +14,17 @@ Item {
     property real defaultX: 0
     property real defaultY: 0
 
-    // Must match `bars` in cava-wave.conf.
     readonly property int pointCount: 20
     property string configPath: String(Qt.resolvedUrl("cava-wave.conf")).replace("file://", "")
     property bool cavaEnabled: true
 
-    // Latest frame from cava; WaveVisualizer eases between frames.
     property var levels: []
 
     implicitWidth: 320
     implicitHeight: 96
     width: implicitWidth
     height: implicitHeight
-    // Size from Settings → Customize, grown from the top-left corner so the
-    // saved position stays put.
+
     scale: Palette.Theme.cavaScale
     transformOrigin: Item.TopLeft
 
@@ -62,7 +55,7 @@ Item {
             var val = parseInt(parts[i]);
             if (isNaN(val))
                 break;
-            // sqrt lifts quiet passages so the wave doesn't sit nearly flat.
+
             next.push(Math.sqrt(Math.max(0, Math.min(1, val / 100))));
         }
         if (next.length > 0)
@@ -94,7 +87,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Palette.Theme.radiusLarge
-        // Same language as the rest of the shell: tonal surface, no outline.
+
         color: Palette.Theme.widgetSurface
         border.width: 1
         border.color: Palette.Theme.outlineSoft
@@ -119,8 +112,6 @@ Item {
         release: 0.16
     }
 
-    // Drag-to-reposition. Position is persisted on release rather than on
-    // every move, to avoid hammering the state file.
     MouseArea {
         anchors.fill: parent
         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor

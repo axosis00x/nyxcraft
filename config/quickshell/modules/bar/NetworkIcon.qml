@@ -2,8 +2,6 @@ import Quickshell.Networking
 import QtQuick
 import "../../theme" as Palette
 
-// Network status as a Material Symbol: wired, Wi-Fi strength, or off.
-// Reads Quickshell's native Networking module (no polling).
 Text {
     id: root
 

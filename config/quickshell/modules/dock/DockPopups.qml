@@ -2,9 +2,6 @@ import QtQuick
 import "../../theme" as Palette
 import "../../components/material"
 
-// Hover label and right-click menu for the dock. Lives at the overlay root
-// rather than inside the bottom notch because the notch clips its content;
-// positions are derived from the dock's hovered / menu cell.
 Item {
     id: root
 
@@ -24,7 +21,6 @@ Item {
         property string label: ""
         signal triggered
 
-        // The menu draws one gliding hover highlight behind its rows.
         readonly property bool hovered: rowMouse.containsMouse
 
         implicitWidth: 168
@@ -56,8 +52,7 @@ Item {
         visible: root.dock.visible && root.dock.hoverItem !== null && !root.menuVisible
         width: tipText.implicitWidth + 20
         readonly property real configuredRadius: Palette.Theme.radiusSmall
-        // Let the label gain a little height at high roundness values, so its
-        // corners can keep growing past the half-height limit of a 26px pill.
+
         height: 26 + Math.max(0, configuredRadius - 13)
         radius: Math.min(configuredRadius, height / 2)
         x: Math.max(6, Math.min(root.width - width - 6, root.hoverPoint.x - width / 2))

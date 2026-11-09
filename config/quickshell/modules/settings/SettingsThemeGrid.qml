@@ -4,8 +4,6 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Every theme as a card with its palette as a strip, inline in the
-// Appearance page; clicking a card applies that theme.
 Grid {
     id: root
 
@@ -84,7 +82,6 @@ Grid {
                 font.pixelSize: Palette.Theme.iconSizeSmall
             }
 
-            // The theme's palette as one segmented strip.
             Row {
                 id: strip
                 anchors.left: parent.left

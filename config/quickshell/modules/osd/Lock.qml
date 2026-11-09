@@ -56,23 +56,23 @@ Item {
             }
         }
 
-            Text {
-                text: root.title
-                color: Palette.Theme.osdText
-                font.family: Palette.Theme.fontMono
-                font.pixelSize: Palette.Theme.fontSizeSmall
-                font.weight: Font.DemiBold
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            Text {
-                text: root.enabled ? "ON" : "OFF"
-                color: root.enabled ? Palette.Theme.accent : Palette.Theme.osdMuted
-                font.family: Palette.Theme.fontMono
-                font.pixelSize: Palette.Theme.fontSizeXs
-                font.weight: Font.Black
-                Layout.alignment: Qt.AlignVCenter
-            }
+        Text {
+            text: root.title
+            color: Palette.Theme.osdText
+            font.family: Palette.Theme.fontMono
+            font.pixelSize: Palette.Theme.fontSizeSmall
+            font.weight: Font.DemiBold
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignVCenter
         }
+
+        Text {
+            text: root.enabled ? "ON" : "OFF"
+            color: root.enabled ? Palette.Theme.accent : Palette.Theme.osdMuted
+            font.family: Palette.Theme.fontMono
+            font.pixelSize: Palette.Theme.fontSizeXs
+            font.weight: Font.Black
+            Layout.alignment: Qt.AlignVCenter
+        }
+    }
 }

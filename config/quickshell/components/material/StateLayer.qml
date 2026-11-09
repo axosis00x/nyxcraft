@@ -1,8 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// Hover/press feedback: a translucent wash of the content color over
-// whatever surface it fills. Set `radius` to match the parent's shape.
 Rectangle {
     property bool hovered: false
     property bool pressed: false

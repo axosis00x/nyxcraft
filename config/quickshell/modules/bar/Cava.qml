@@ -16,9 +16,6 @@ Item {
     implicitWidth: 110
     implicitHeight: 18
 
-    // True if ANY mpris player is currently playing — not just whichever
-    // single "selected" player a parent might bind `active` to. This way
-    // cava keeps running as long as something, anything, is making sound.
     readonly property bool anyPlaying: {
         var list = Mpris.players.values;
         for (var i = 0; i < list.length; i++) {
@@ -28,8 +25,6 @@ Item {
         return false;
     }
 
-    // Actual "should cava be running" condition combines the external
-    // active flag (e.g. widget visibility) with real playback state.
     readonly property bool shouldRun: root.active && root.anyPlaying
 
     function parseLine(line) {

@@ -7,9 +7,6 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// Thumbnails of the active theme's wallpapers (~/Pictures/wallpapers/<theme>),
-// inline in the Appearance page; clicking one sets it. Follows theme
-// switches, since each theme has its own folder.
 Item {
     id: root
 
@@ -105,7 +102,6 @@ Item {
                     }
                 }
 
-                // Selected: an accent ring and badge, on top of the photo.
                 Rectangle {
                     anchors.fill: parent
                     radius: frame.radius

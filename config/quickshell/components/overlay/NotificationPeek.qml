@@ -5,17 +5,12 @@ import QtQuick.Layouts
 import "../material"
 import "../../theme" as Palette
 
-// A new notification, morphing out of the top notch (CenterOverlay puts it
-// on the top stage while no top panel is open). Minimal: sender image, title,
-// and a short body preview. Hovering holds it open and unfolds the rest of
-// the body and any actions; clicking runs its default action.
 Item {
     id: root
 
     property var center: null
 
     readonly property var notification: center ? center.toastNotification : null
-    // CenterOverlay shows this on the stage while true.
     readonly property bool wanted: center !== null && center.toastVisible && notification !== null
     readonly property bool critical: notification !== null && notification.urgency === NotificationUrgency.Critical
     readonly property bool open: hover.hovered
@@ -24,10 +19,7 @@ Item {
     implicitWidth: 360
     implicitHeight: content.implicitHeight + 28
 
-    // Don't take clicks while faded out on the stage.
     enabled: wanted
-    // Hidden once faded out: a transparent item still catches hover, which
-    // blocked the power and tool menus beneath it on the top stage.
     visible: opacity > 0.01
 
     function hide() {
@@ -81,9 +73,6 @@ Item {
             Layout.fillWidth: true
             spacing: 12
 
-            // Fill the notification row with the sender avatar, and badge it
-            // with the source app icon. If there is no avatar, show the app
-            // icon in the full tile.
             ClippingRectangle {
                 Layout.alignment: Qt.AlignTop
                 Layout.preferredWidth: 48
@@ -127,7 +116,7 @@ Item {
                     anchors.centerIn: parent
                     visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
                     text: root.critical ? "priority_high" : "notifications"
-                    // Each app gets its own stable hue.
+
                     color: root.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(root.notification ? root.notification.appName : "")
                     font.family: Palette.Theme.fontIcons
                     font.weight: Palette.Theme.iconWeight
@@ -172,12 +161,9 @@ Item {
                         font.pixelSize: Palette.Theme.fontSizeBody
                         font.weight: Font.DemiBold
                         wrapMode: Text.WrapAnywhere
-                        // Notification titles often contain the sender's full
-                        // name. Give them enough lines to wrap before eliding.
                         maximumLineCount: 3
                         elide: Text.ElideRight
                     }
-
                 }
 
                 Text {
@@ -214,7 +200,6 @@ Item {
             }
         }
 
-        // Actions, unfolded while hovered.
         Flow {
             Layout.fillWidth: true
             Layout.leftMargin: 60
@@ -230,8 +215,6 @@ Item {
                     chipHeight: 24
                     fontPixelSize: Palette.Theme.fontSizeXs
                     horizontalPadding: 12
-                    // Hide first: invoking can close the notification,
-                    // which destroys this chip mid-handler.
                     onClicked: {
                         var action = modelData;
                         root.invokeAction(action);

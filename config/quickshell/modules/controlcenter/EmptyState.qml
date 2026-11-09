@@ -1,7 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// A calm placeholder: a muted icon over a short message.
 Column {
     id: root
 

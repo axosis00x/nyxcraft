@@ -2,24 +2,38 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Enable/disable + on-screen position for the desktop widget layer
-// (widgets/DesktopWidgetsLayer.qml), persisted the same way BarLayoutService
-// persists the bar edge. The enable/disable picker UI lives in the
-// launcher's "/widgets" command (modules/launcher/Launcher.qml); position is
-// set by dragging the widgets themselves.
 Item {
     id: root
     visible: false
 
     readonly property var widgets: [
-        { id: "clock", label: "Clock Widget", icon: "" },
-        { id: "weather", label: "Weather Widget", icon: "" },
-        { id: "cava", label: "Audio Wave Widget", icon: "graphic_eq" },
-        { id: "dock", label: "Dock", icon: "" },
-        { id: "bongo", label: "Bongo Cat", icon: "pets" }
+        {
+            id: "clock",
+            label: "Clock Widget",
+            icon: ""
+        },
+        {
+            id: "weather",
+            label: "Weather Widget",
+            icon: ""
+        },
+        {
+            id: "cava",
+            label: "Audio Wave Widget",
+            icon: "graphic_eq"
+        },
+        {
+            id: "dock",
+            label: "Dock",
+            icon: ""
+        },
+        {
+            id: "bongo",
+            label: "Bongo Cat",
+            icon: "pets"
+        }
     ]
 
-    // Desktop-file ids pinned to the dock (widgets/Dock.qml), in order.
     readonly property var dockPinned: state.dockPinned
 
     function setPinOrder(ids) {
@@ -51,8 +65,6 @@ Item {
         case "dock":
             return state.dockEnabled;
         case "bongo":
-            // Existing state files predate this widget. Treat an absent
-            // value as enabled so it appears after the shell reloads.
             return state.bongoEnabled !== false;
         default:
             return false;
@@ -74,16 +86,12 @@ Item {
             state.dockEnabled = !state.dockEnabled;
             break;
         case "bongo":
-            // isEnabled() treats a missing value as on, so toggle from that
-            // rather than from the raw (possibly undefined) property.
             state.bongoEnabled = !isEnabled("bongo");
             break;
         }
         stateFile.writeAdapter();
     }
 
-    // A negative coordinate means "never dragged" — the widget falls back
-    // to its default corner layout instead.
     function hasPosition(widgetId) {
         switch (widgetId) {
         case "clock":
@@ -141,9 +149,6 @@ Item {
         stateFile.writeAdapter();
     }
 
-    // blockLoading forces the initial read to happen synchronously, so
-    // isEnabled()/hasPosition() etc. see the real saved state on the very
-    // first render instead of the declared defaults below flashing first.
     FileView {
         id: stateFile
         path: Quickshell.cachePath("desktop-widgets.json")

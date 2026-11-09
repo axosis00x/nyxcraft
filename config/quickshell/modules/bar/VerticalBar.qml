@@ -6,46 +6,27 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// Left-edge bar in the spirit of Caelestia's: one solid strip fused to the
-// screen edge (with concave fillets where it meets the top and bottom
-// edges), holding grouped pills — launcher and workspaces at the top, the
-// focused window's icon and title running down the middle, and tray,
-// status, clock and power at the bottom. In island mode the strip lifts off
-// the edge instead: inset on every side, rounded with the same capsule radius
-// as the horizontal bar, fillets gone — the same switch the horizontal bar's
-// notch makes (Notch.qml).
 Item {
     id: root
 
     required property var bar
-    // Width of the solid strip; the fillets hang just outside it. In notch
-    // mode they curve into the screen frame's inner edge, at its radius
-    // (components/overlay/ScreenFrame.qml).
     property real thickness: 44
     property real filletSize: Palette.Theme.screenFrameRadius
 
     property real islandness: bar.island ? 1 : 0
-    // Quick and without overshoot: a springy inset makes the whole strip
-    // wobble against the screen edge.
     Behavior on islandness {
         NumberAnimation {
             duration: Palette.Theme.motionFast
             easing.type: Easing.OutCubic
         }
     }
-    // The island keeps the strip's full width; Bar.qml widens the reserved
-    // space by the gap so the inset never squeezes the pills.
     readonly property real inset: bar.islandGap * islandness
-    // The screen frame's band along the top and bottom edges (notch mode).
     readonly property real frameInset: Palette.Theme.screenFrameBorder * (1 - islandness)
 
-    // Pills sit pillInset in from the strip's sides, rounded like the
-    // horizontal bar's capsules (the shared capsule radius).
     readonly property real pillInset: 6
     readonly property real pillWidth: strip.width - pillInset * 2
     readonly property real pillRadius: bar.capsuleRadius
 
-    // ── strip ───────────────────────────────────────────────────────
     Rectangle {
         id: strip
         anchors.top: parent.top
@@ -79,7 +60,6 @@ Item {
         opacity: 1 - root.islandness
     }
 
-    // ── top: launcher + workspaces ──────────────────────────────────
     ColumnLayout {
         id: topGroup
         anchors.top: strip.top
@@ -123,10 +103,6 @@ Item {
             }
         }
     }
-
-    // ── middle: focused window ──────────────────────────────────────
-    // Lives in whatever space the top and bottom groups leave, so a long
-    // title elides instead of running into them.
     Item {
         id: middle
         anchors.top: topGroup.bottom
@@ -172,8 +148,6 @@ Item {
                 }
             }
 
-            // Title reads top-to-bottom, rotated a quarter turn; the
-            // wrapper reports the rotated footprint to the layout.
             Item {
                 id: titleBox
                 readonly property real maxLength: Math.max(0, middle.height - 30)
@@ -199,7 +173,6 @@ Item {
         }
     }
 
-    // ── bottom: tray, status, clock, power ──────────────────────────
     ColumnLayout {
         id: bottomGroup
         anchors.bottom: strip.bottom
@@ -222,7 +195,6 @@ Item {
             }
         }
 
-        // Network, Bluetooth and battery; opens the control center.
         Pill {
             id: status
             Layout.alignment: Qt.AlignHCenter
@@ -267,7 +239,6 @@ Item {
             }
         }
 
-        // Stacked clock; opens the calendar.
         Pill {
             Layout.alignment: Qt.AlignHCenter
             implicitHeight: clockColumn.implicitHeight + 20
@@ -357,17 +328,12 @@ Item {
             }
         }
     }
-
-    // A grouped section: the same capsule the horizontal bar uses
-    // (BarSection — surface tint), one step lighter so it reads against the
-    // solid strip, with corners nested inside the strip's.
     component Pill: BarSection {
         implicitWidth: root.pillWidth
         radius: root.pillRadius
         color: Palette.Theme.surfaceContainerHigh
     }
 
-    // A round icon button sitting directly on the strip.
     component BarButton: Item {
         id: button
 

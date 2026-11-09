@@ -3,9 +3,6 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// A compact month grid: month title with previous/next buttons, weekday
-// initials, and the days, today in an accent circle. Opens on the current
-// month; `reset()` jumps back to it.
 Item {
     id: root
 
@@ -25,7 +22,6 @@ Item {
         month = ((m % 12) + 12) % 12;
     }
 
-    // Monday-first grid of 42 cells; days outside the month are 0.
     readonly property var cells: {
         var first = new Date(year, month, 1);
         var offset = (first.getDay() + 6) % 7;
@@ -35,7 +31,7 @@ Item {
             var d = i - offset + 1;
             out.push(d >= 1 && d <= days ? d : 0);
         }
-        // Drop a trailing empty week.
+
         return out.slice(35).every(v => v === 0) ? out.slice(0, 35) : out;
     }
 
@@ -92,7 +88,7 @@ Item {
                     Layout.preferredHeight: 18
                     horizontalAlignment: Text.AlignHCenter
                     text: modelData
-                    // Weekends (the last two columns) in the theme's purple.
+
                     color: index >= 5 ? Palette.Theme.purple : Palette.Theme.textMuted
                     font.family: Palette.Theme.fontSans
                     font.pixelSize: Palette.Theme.fontSizeXs

@@ -1,43 +1,24 @@
 import QtQuick
 import "../../theme" as Palette
 
-// Material 3 Expressive slider: a thick track split by a slim vertical
-// handle, with a small gap on either side of it. The active part carries an
-// optional inset icon; a stop dot marks the end of the inactive part. While
-// dragging, the handle thins and a value bubble rises above it.
-//
-// Set `interactive: false` for a read-only meter (OSD).
 Item {
     id: root
 
     property real value: 0
     property string icon: ""
-    // Optional formatted value (for example, a size in px) for the drag bubble.
     property string valueText: ""
     property bool interactive: true
-    // Lowest value the slider can show or be dragged to. The minimum sits
-    // just past the inset icon, so the icon always stays on the filled part.
     property real minimum: 0
-    // Shows the value bubble above the handle while dragging.
     property bool showValue: true
     property int trackHeight: 16
     property color accent: Palette.Theme.accent
     property color trackColor: Palette.Theme.surfaceContainerHighest
-    // Optional tick at a reference value (0–1), e.g. a setting's default.
     property real mark: -1
     signal moved(real value)
 
-    // True only once the first drag position is known, so the slider never
-    // flashes a stale drag value at the moment of the press.
     readonly property bool pressed: dragging
     property bool dragging: false
     property real dragValue: 0
-
-    // External value changes spring into place; the drag position is shown
-    // raw. Keeping the spring off the dragged value means no animation is
-    // ever left running underneath the pointer to fight it.
-    // While dragging it follows the value directly, so releasing hands
-    // over to exactly where the handle already is.
     property real settledValue: value
     Behavior on settledValue {
         enabled: !root.dragging
@@ -51,13 +32,11 @@ Item {
     readonly property real handleWidth: interactive ? (dragging ? 2 : 4) : 0
     readonly property real handleSpan: handleWidth + handleGap * 2
     readonly property real innerRadius: 3
-    // Width reserved at the start of the track for the inset icon.
     readonly property real iconZone: icon !== "" ? trackHeight + 4 : 0
 
     implicitWidth: 200
     implicitHeight: interactive ? trackHeight + 14 : trackHeight
 
-    // Handle center; both track halves and the handle hang off it.
     readonly property real handleX: iconZone + handleSpan / 2 + (width - iconZone - handleSpan) * progress
 
     Rectangle {
@@ -87,7 +66,6 @@ Item {
         color: root.trackColor
         visible: width > 0.5
 
-        // Stop indicator.
         Rectangle {
             visible: root.interactive && parent.width > root.trackHeight
             width: 4
@@ -100,8 +78,6 @@ Item {
         }
     }
 
-    // Inset icon: lives in the reserved zone at the start of the active
-    // track, so it is visible at every value including the minimum.
     Text {
         id: iconText
         visible: root.icon !== ""
@@ -136,7 +112,6 @@ Item {
         }
     }
 
-    // Value bubble while dragging.
     Rectangle {
         id: bubble
         visible: root.interactive && root.showValue

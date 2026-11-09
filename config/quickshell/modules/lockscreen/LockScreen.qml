@@ -8,30 +8,24 @@ Item {
     id: root
 
     property string passwordBuffer: ""
-    // What's been typed so far, shared by every monitor's lock surface so
-    // the dots show up everywhere no matter which one holds keyboard focus.
+
     property string typed: ""
     property bool authBusy: false
     property bool authFailed: false
     property int failedAttempts: 0
     property string wallpaperPath: ""
-    // Subject cut out of the wallpaper (transparent PNG, same size) for the
-    // depth effect; empty until one exists. Generated once per wallpaper and
-    // cached, so only the first lock with a new wallpaper waits for it.
+
     property string depthPath: ""
 
     readonly property string lockscreenDir: Quickshell.env("HOME") + "/Pictures/wallpapers/lockscreen"
     readonly property string depthScript: Quickshell.env("HOME") + "/.config/quickshell/scripts/depth-cutout.sh"
 
-    // Depth cutouts only for images in the lock screen folder.
     onWallpaperPathChanged: {
         depthPath = "";
         if (wallpaperPath.indexOf(lockscreenDir + "/") === 0)
             depthRead.exec([depthScript, wallpaperPath]);
     }
 
-    // Locked means the compositor confirmed it (`secure`): a requested
-    // lock that never took effect mustn't block reloads or later locks.
     readonly property bool isLocked: sessionLock.locked && sessionLock.secure
 
     signal unlocked
@@ -54,8 +48,7 @@ Item {
             depthWarm.running = true;
         sessionLock.locked = true;
         root.engaged();
-        // Best-effort: keeps logind's own LockedHint/Lock signal in sync so
-        // other session-aware tools see a consistent state.
+
         lockHint.exec(["loginctl", "lock-session"]);
     }
 
@@ -105,9 +98,6 @@ Item {
         }
     }
 
-    // A lock the compositor hasn't confirmed within a few seconds failed
-    // (e.g. it was refused). Clear it, or lock() would keep returning early
-    // and idle/suspend locking would silently stop working.
     Timer {
         interval: 3000
         running: sessionLock.locked && !sessionLock.secure
@@ -142,9 +132,7 @@ Item {
 
     Process {
         id: wallpaperRead
-        // Next image from the lock screen folder, without repeats until
-        // every image has been shown. Nothing when the folder is empty — the
-        // lock screen then shows a plain background.
+
         command: [Quickshell.env("HOME") + "/.config/quickshell/scripts/lockscreen-wallpaper.sh"]
         stdout: StdioCollector {
             onStreamFinished: {
@@ -158,15 +146,13 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 var path = text.trim();
-                // Ignore a result for a wallpaper that's since been replaced.
+
                 if (path !== "" && !depthRead.running)
                     root.depthPath = path;
             }
         }
     }
 
-    // Make any missing cutouts for the lock screen folder in the background,
-    // so new images are ready by the time they're picked.
     Process {
         id: depthWarm
         command: ["nice", "-n", "19", root.depthScript, "--all", root.lockscreenDir]

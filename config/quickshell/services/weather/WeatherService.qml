@@ -4,8 +4,6 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// Shared weather for the desktop widget and the dashboard: one wttr.in
-// request every five minutes (it rate-limits).
 Singleton {
     id: root
 
@@ -44,7 +42,6 @@ Singleton {
         weatherProcess.running = true;
     }
 
-    // Persistent last-known-good reading, survives quickshell/session restarts.
     FileView {
         id: cacheFile
         path: Quickshell.cachePath("desktop-weather-cache.json")
@@ -118,10 +115,7 @@ Singleton {
                     cache.highC = root.highC;
                     cache.lowC = root.lowC;
                     cache.location = root.location;
-                } catch (e) {
-                    // Transient network/parse failure — keep showing the
-                    // last good reading (live or cached) instead of blanking out.
-                }
+                } catch (e) {}
             }
         }
     }

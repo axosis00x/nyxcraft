@@ -22,13 +22,11 @@ in
         wl-clipboard
         grimblast
         playerctl
-        # The shell's audio visualizers (bar and desktop widget).
         cava
         awww
         wiremix
         grim
         slurp
-        # The desktop shell (bar, launcher, panels: config/quickshell).
         quickshell
         hyprpicker
         libnotify

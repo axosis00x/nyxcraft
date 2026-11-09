@@ -4,12 +4,6 @@ import QtQuick
 import "../services"
 import "../services/weather"
 
-// Hosts the desktop widgets (clock, weather, audio wave) on the wlr background layer —
-// below normal windows, above the wallpaper — so they read as part of the
-// desktop rather than another panel. Covers the whole screen so each widget
-// can be dragged anywhere on it; the input mask is carved down to just the
-// widgets' own bounds so every other click/gesture still passes straight
-// through to the desktop underneath.
 PanelWindow {
     id: root
 
@@ -19,8 +13,6 @@ PanelWindow {
     readonly property bool weatherOn: widgetsService ? widgetsService.isEnabled("weather") : true
     readonly property bool cavaOn: widgetsService ? widgetsService.isEnabled("cava") : true
 
-    // Default corner spot (bottom-right, clock stacked above weather,
-    // centered on each other) used until a widget has been dragged.
     readonly property real margin: 36
     readonly property real spacing: 16
 
@@ -70,9 +62,7 @@ PanelWindow {
         id: clockWidget
         widgetsService: root.widgetsService
         visible: root.clockOn
-        // Right edge lines up with the weather widget below it; the clock's
-        // own footprint is now just its text, so it's sized off that
-        // instead of the old fixed dial dimensions.
+
         defaultX: root.width - root.margin - (weatherWidget.implicitWidth + clockWidget.implicitWidth) / 2
         defaultY: root.height - root.margin - root.spacing - clockWidget.implicitHeight - weatherWidget.implicitHeight
     }
@@ -86,7 +76,6 @@ PanelWindow {
         defaultY: root.height - root.margin - weatherWidget.implicitHeight
     }
 
-    // Bottom-left corner until dragged.
     CavaWaveWidget {
         id: cavaWidget
         widgetsService: root.widgetsService

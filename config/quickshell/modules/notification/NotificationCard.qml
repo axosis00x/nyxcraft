@@ -26,15 +26,11 @@ Surface {
     }
     function dismissNotification() {
         card.dismissed();
-        // A handler of `dismissed` (the notification center's record
-        // removal) may already have closed it; dismissing a closed
-        // notification again logs "Cannot close destroyed notification".
+
         if (card.canDismiss && card.actionTarget && card.actionTarget.tracked)
             card.actionTarget.dismiss();
     }
-    // Notification history records carry a receivedAt (ms since epoch) set
-    // when captured; the live toast passes the raw Notification object
-    // instead, which has no such field, so it just shows nothing.
+
     function timeAgo(receivedAt) {
         if (!receivedAt)
             return "";
@@ -47,13 +43,10 @@ Surface {
             return Math.floor(diffSec / 3600) + "h ago";
         return Math.floor(diffSec / 86400) + "d ago";
     }
-    // Compact cards morph open on hover: the full text springs into view
-    // and the corners round out, then they settle back when the pointer
-    // leaves. Full cards always show everything.
+
     readonly property bool open: !compact || cardHover.hovered
     readonly property bool critical: notification && notification.urgency === NotificationUrgency.Critical
-    // How many notifications this card stands for (a stacked group), shown
-    // as a pill beside the title.
+
     property int count: 1
 
     height: implicitHeight
@@ -74,8 +67,6 @@ Surface {
         SpatialMotion {}
     }
 
-    // Refresh the time binding periodically. Keeping this as a property
-    // change means ListView can safely reuse a card for another notification.
     Timer {
         interval: 30000
         running: !!(card.notification && card.notification.receivedAt)
@@ -84,7 +75,6 @@ Surface {
         onTriggered: card.clockTick++
     }
 
-    // Hover over the whole card, including its buttons.
     HoverHandler {
         id: cardHover
     }
@@ -119,8 +109,6 @@ Surface {
         }
         spacing: 12
 
-        // Use the sender avatar as the full tile and badge it with the source
-        // app icon. The source icon fills the tile when there is no avatar.
         ClippingRectangle {
             Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: 48
@@ -172,8 +160,8 @@ Surface {
                 anchors.centerIn: parent
                 visible: avatar.status !== Image.Ready && sourceIcon.status !== Image.Ready
                 text: card.critical ? "priority_high" : "notifications"
-                // Each app gets its own stable hue.
-                    color: card.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(card.notification ? card.notification.appName : "")
+
+                color: card.critical ? Palette.Theme.errorColor : Palette.Theme.hueFor(card.notification ? card.notification.appName : "")
                 font.family: Palette.Theme.fontIcons
                 font.weight: Palette.Theme.iconWeight
                 font.pixelSize: Palette.Theme.iconSize
@@ -203,7 +191,6 @@ Surface {
             Layout.minimumWidth: 0
             spacing: 2
 
-            // Title .......... time  [count]  ✕
             RowLayout {
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
@@ -265,7 +252,6 @@ Surface {
                         font.pixelSize: Palette.Theme.iconSizeSmall
                     }
                 }
-
             }
 
             Text {
@@ -297,10 +283,7 @@ Surface {
                         chipHeight: 24
                         fontPixelSize: Palette.Theme.fontSizeXs
                         horizontalPadding: 14
-                        // The action goes first (an app expects it before
-                        // the close), and it may destroy this chip by closing
-                        // the notification, so only plain references are
-                        // used after it.
+
                         onClicked: {
                             var c = card;
                             var dismiss = c.canDismiss && c.actionTarget && !c.actionTarget.resident;
@@ -314,7 +297,6 @@ Surface {
         }
     }
 
-    // Dismiss, centred on the card's right; faded in on hover.
     IconButton {
         anchors.right: parent.right
         anchors.rightMargin: 10

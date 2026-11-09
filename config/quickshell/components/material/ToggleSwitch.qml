@@ -1,8 +1,6 @@
 import QtQuick
 import "../../theme" as Palette
 
-// Material 3 switch: a small outlined thumb when off that grows (and gains
-// a check) when on, springing across the track; pressing swells it.
 Item {
     id: root
 
@@ -28,8 +26,6 @@ Item {
     Rectangle {
         id: thumb
 
-        // Center and diameter animate independently, so the thumb can
-        // swell on press while it springs across the track.
         property real centerX: root.checked ? root.width - root.height / 2 : root.height / 2
 
         width: switchMouse.pressed ? root.height - 4 : (root.checked ? root.height - 8 : root.height - 14)

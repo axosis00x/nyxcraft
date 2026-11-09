@@ -39,6 +39,12 @@
     "dark": "Material Icon Theme",
   },
   "agent_servers": {
+    "github-copilot-cli": {
+      "default_config_options": {
+        "model": "auto"
+      },
+      "type": "registry"
+    },
     "claude-acp": {
       "default_config_options": {
         "mode": "auto",

@@ -5,9 +5,6 @@ import QtQuick.Layouts
 import "../../components/material"
 import "../../theme" as Palette
 
-// One card per connected output with its resolution and scale as chips,
-// plus a confirm banner while a change is still provisional (it reverts on
-// its own unless kept — see DisplayService).
 ColumnLayout {
     id: root
 
@@ -17,7 +14,6 @@ ColumnLayout {
 
     Component.onCompleted: service.refresh()
 
-    // ── confirm banner ──────────────────────────────────────────────
     Rectangle {
         Layout.fillWidth: true
         Layout.preferredHeight: 56
@@ -61,7 +57,6 @@ ColumnLayout {
         }
     }
 
-    // ── one card per output ─────────────────────────────────────────
     Repeater {
         model: root.service.monitors
 

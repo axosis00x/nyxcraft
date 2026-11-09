@@ -2,13 +2,9 @@ import QtQuick
 import "../../components/material"
 import "../../theme" as Palette
 
-// The dashboard's tabs, Caelestia-style and compact: icon and name per tab,
-// the current one in accent, a thin indicator sliding under it, and a
-// hairline dividing the tabs from the page.
 Item {
     id: root
 
-    // [{ id, icon, label }]
     property var tabs: []
     property int current: 0
     signal picked(int index)
@@ -34,7 +30,6 @@ Item {
         return total;
     }
 
-    // Position each tab using one shared gap, including both outer edges.
     Item {
         id: row
         anchors.left: parent.left
@@ -107,7 +102,6 @@ Item {
                 }
             }
         }
-
     }
 
     Rectangle {
@@ -121,7 +115,6 @@ Item {
         color: Palette.Theme.outlineSoft
     }
 
-    // Leading edge fast, trailing edge following: it stretches as it moves.
     Rectangle {
         id: indicator
 
