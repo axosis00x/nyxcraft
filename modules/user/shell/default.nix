@@ -39,8 +39,6 @@ in
       ripgrep
       yazi
       fetch
-      tuios
-      rmpc
     ];
   };
 }

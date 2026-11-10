@@ -18,7 +18,6 @@ in
       vim
       neovim
       zed-editor
-      claude-code
 
       # languages & runtimes
       jdk21
