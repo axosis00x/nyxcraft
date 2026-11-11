@@ -41,18 +41,10 @@
   "agent_servers": {
     "github-copilot-cli": {
       "default_config_options": {
+        "mode": "https://agentclientprotocol.com/protocol/session-modes#autopilot",
         "model": "auto"
       },
       "type": "registry"
-    },
-    "claude-acp": {
-      "default_config_options": {
-        "mode": "auto",
-        "model": "default",
-        "effort": "default",
-        "fast": false,
-      },
-      "type": "registry",
     },
     "codex-acp": {
       "default_config_options": {
