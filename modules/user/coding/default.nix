@@ -32,6 +32,7 @@ in
       clang-tools
       gcc
       cmake
+      gnumake
       nixd
       nil
       pkgs.go
