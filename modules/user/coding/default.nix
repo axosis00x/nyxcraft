@@ -18,7 +18,6 @@ in
       vim
       neovim
       zed-editor
-      intellij-idea
 
       # languages & runtimes
       jdk21
