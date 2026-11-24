@@ -24,6 +24,7 @@ in
     home.packages = with pkgs; [
       vesktop
       switcheroo
+      ladybird
       localsend
       obs-studio
       mission-center
