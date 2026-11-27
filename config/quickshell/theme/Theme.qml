@@ -47,9 +47,9 @@ QtObject {
     property var orange: "#fe8019"
 
     readonly property real surfaceTintOpacity: 0.015
-    readonly property string fontMono: "SF Mono "
-    readonly property string fontSans: "Inter"
-    readonly property string fontIcons: "Material Symbols Rounded "
+    readonly property string fontSans: "SF Pro Rounded"
+    readonly property string fontMono: "SF Pro Text"
+    readonly property string fontIcons: "Material Symbols Rounded"
 
     readonly property int iconWeight: Font.Medium
 

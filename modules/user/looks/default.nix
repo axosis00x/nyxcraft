@@ -23,6 +23,7 @@ in
       nerd-fonts.geist-mono
       noto-fonts-color-emoji
       material-symbols
+      roboto-mono
       inter
       mononoki
       iosevka
